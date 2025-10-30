@@ -1,10 +1,11 @@
 # Dependencies
 node_modules/
-powerlink-app/node_modules/
 
 # Build output
 dist/
-powerlink-app/dist/
+
+# Old structure
+powerlink-app/
 *.local
 
 # Environment
