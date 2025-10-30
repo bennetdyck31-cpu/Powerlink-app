@@ -1,0 +1,14 @@
+{
+  "name": "powerlink-app",
+  "version": "1.0.0",
+  "description": "Verbinde iPhone, iPad & MacBook – und mach KI **80% schneller**.",
+  "private": true,
+  "scripts": {
+    "dev": "cd powerlink-app && npm run dev",
+    "build": "cd powerlink-app && npm run build",
+    "preview": "cd powerlink-app && npm run preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
