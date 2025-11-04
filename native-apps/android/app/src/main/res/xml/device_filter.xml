@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Filter für alle USB-Geräte -->
+    <usb-device />
+    
+    <!-- Optional: Spezifische Vendor IDs -->
+    <!-- Apple -->
+    <usb-device vendor-id="1452" />
+    <!-- Samsung -->
+    <usb-device vendor-id="1256" />
+    <!-- Google -->
+    <usb-device vendor-id="6353" />
+</resources>

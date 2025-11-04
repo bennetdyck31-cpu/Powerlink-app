@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Activity, 
@@ -12,7 +12,8 @@ import {
   Download,
   Share2,
   Video,
-  X
+  X,
+  Usb
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -20,20 +21,161 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
+interface USBDeviceInfo {
+  id: number
+  name: string
+  type: string
+  cpu: number
+  gpu: number
+  model: string
+  vendorId?: number
+  productId?: number
+  usbDevice?: USBDevice
+}
+
 const Dashboard = () => {
   const [showBenchmark, setShowBenchmark] = useState(false)
   const [benchmarkRunning, setBenchmarkRunning] = useState(false)
   const [benchmarkScore, setBenchmarkScore] = useState(0)
+  const [connectedDevices, setConnectedDevices] = useState<USBDeviceInfo[]>([])
+  const [webUSBSupported, setWebUSBSupported] = useState(false)
+  const [scanningForDevices, setScanningForDevices] = useState(false)
 
-  const connectedDevices = [
-    { id: 1, name: 'MacBook Pro', type: 'laptop', cpu: 65, gpu: 72, model: '2024' },
-    { id: 2, name: 'iPhone 15 Pro', type: 'phone', cpu: 48, gpu: 52, model: 'Pro Max' }
-  ]
+  // Berechne Verbindungsstatus basierend auf tatsächlich verbundenen Geräten
+  const isConnected = connectedDevices.length > 0
+
+  // Prüfe WebUSB Support
+  useEffect(() => {
+    setWebUSBSupported('usb' in navigator)
+  }, [])
+
+  // USB Event Listener für automatische Erkennung
+  useEffect(() => {
+    if (!webUSBSupported) return
+
+    const handleConnect = async (event: USBConnectionEvent) => {
+      const device = event.device
+      console.log('USB Gerät angeschlossen:', device)
+      await addUSBDevice(device)
+    }
+
+    const handleDisconnect = (event: USBConnectionEvent) => {
+      const device = event.device
+      console.log('USB Gerät getrennt:', device)
+      setConnectedDevices(devices => 
+        devices.filter(d => d.usbDevice !== device)
+      )
+    }
+
+    navigator.usb.addEventListener('connect', handleConnect)
+    navigator.usb.addEventListener('disconnect', handleDisconnect)
+
+    // Lade bereits verbundene Geräte
+    loadExistingDevices()
+
+    return () => {
+      navigator.usb.removeEventListener('connect', handleConnect)
+      navigator.usb.removeEventListener('disconnect', handleDisconnect)
+    }
+  }, [webUSBSupported])
+
+  const loadExistingDevices = async () => {
+    if (!navigator.usb) return
+    
+    try {
+      const devices = await navigator.usb.getDevices()
+      for (const device of devices) {
+        await addUSBDevice(device)
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden von USB-Geräten:', error)
+    }
+  }
+
+  const addUSBDevice = async (usbDevice: USBDevice) => {
+    // Bestimme Gerätetyp basierend auf Vendor ID
+    const getDeviceType = (vendorId: number, productName?: string) => {
+      // Apple (0x05AC)
+      if (vendorId === 0x05AC) {
+        if (productName?.toLowerCase().includes('iphone')) return 'phone'
+        if (productName?.toLowerCase().includes('ipad')) return 'tablet'
+        return 'laptop'
+      }
+      // Samsung (0x04E8)
+      if (vendorId === 0x04E8) return 'phone'
+      // Google (0x18D1)
+      if (vendorId === 0x18D1) return 'phone'
+      return 'device'
+    }
+
+    const getDeviceName = (vendorId: number, productId: number) => {
+      // Apple Geräte
+      if (vendorId === 0x05AC) {
+        if (productId === 0x12A8) return 'iPhone 15 Pro'
+        if (productId === 0x12A0) return 'iPhone 15'
+        return 'Apple Device'
+      }
+      // Samsung
+      if (vendorId === 0x04E8) return 'Samsung Device'
+      // Google
+      if (vendorId === 0x18D1) return 'Google Pixel'
+      
+      return `USB Device (${vendorId.toString(16)}:${productId.toString(16)})`
+    }
+
+    const deviceInfo: USBDeviceInfo = {
+      id: Date.now(),
+      name: getDeviceName(usbDevice.vendorId, usbDevice.productId),
+      type: getDeviceType(usbDevice.vendorId, usbDevice.productName),
+      cpu: Math.floor(Math.random() * 30) + 40, // Simulierte Werte
+      gpu: Math.floor(Math.random() * 30) + 40,
+      model: usbDevice.productName || 'Unknown',
+      vendorId: usbDevice.vendorId,
+      productId: usbDevice.productId,
+      usbDevice: usbDevice
+    }
+
+    setConnectedDevices(devices => {
+      // Verhindere Duplikate
+      const exists = devices.some(d => d.usbDevice === usbDevice)
+      if (exists) return devices
+      return [...devices, deviceInfo]
+    })
+  }
+
+  const requestUSBDevice = async () => {
+    if (!navigator.usb) {
+      alert('WebUSB wird von diesem Browser nicht unterstützt. Bitte nutzen Sie Chrome, Edge oder Opera.')
+      return
+    }
+
+    setScanningForDevices(true)
+    try {
+      // Fordere Zugriff auf ein USB-Gerät an
+      const device = await navigator.usb.requestDevice({
+        filters: [
+          { vendorId: 0x05AC }, // Apple
+          { vendorId: 0x04E8 }, // Samsung
+          { vendorId: 0x18D1 }, // Google
+        ]
+      })
+
+      await addUSBDevice(device)
+    } catch (error) {
+      console.log('Gerätauswahl abgebrochen oder Fehler:', error)
+    } finally {
+      setScanningForDevices(false)
+    }
+  }
+
+  const handleDisconnectDevice = (deviceId: number) => {
+    setConnectedDevices(devices => devices.filter(d => d.id !== deviceId))
+  }
 
   const stats = [
     { 
       label: 'Connected Devices', 
-      value: connectedDevices.length, 
+      value: isConnected ? connectedDevices.length : 0, 
       icon: Laptop, 
       color: 'text-green-400',
       bgGradient: 'from-green-500/20 to-emerald-500/20'
@@ -190,70 +332,126 @@ const Dashboard = () => {
               </svg>
               
               <div className="relative z-10 flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center mb-4">
+                <div className={`w-16 h-16 rounded-full ${
+                  isConnected 
+                    ? 'bg-gradient-to-br from-cyan-500 to-purple-500' 
+                    : 'bg-gradient-to-br from-gray-600 to-gray-700'
+                } flex items-center justify-center mb-4`}>
                   <Zap className="w-8 h-8 text-white" />
                 </div>
                 <motion.div
-                  className="text-5xl font-bold text-blue-400"
-                  animate={{ scale: [1, 1.05, 1] }}
+                  className={`text-5xl font-bold ${
+                    isConnected ? 'text-blue-400' : 'text-gray-500'
+                  }`}
+                  animate={isConnected ? { scale: [1, 1.05, 1] } : {}}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  Verbunden
+                  {isConnected ? 'Verbunden' : 'Disconnected'}
                 </motion.div>
                 <p className="text-lg text-gray-400 mt-2">
-                  Rechenleistung wird geteilt
+                  {isConnected ? 'Rechenleistung wird geteilt' : 'Kein Gerät verbunden'}
                 </p>
               </div>
             </div>
           </motion.div>
 
           <Card className="w-full max-w-4xl p-6">
-            <h2 className="text-2xl font-bold mb-6 flex items-center">
-              <Smartphone className="mr-3 h-6 w-6 text-cyan-400" />
-              Connected Devices
-            </h2>
-            <div className="space-y-4">
-              {connectedDevices.map((device) => (
-                <Card key={device.id} className="p-5 bg-gray-700 hover:bg-gray-600 transition-colors">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center">
-                        {device.type === 'laptop' ? (
-                          <Laptop className="w-6 h-6 text-blue-400" />
-                        ) : (
-                          <Smartphone className="w-6 h-6 text-purple-400" />
-                        )}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold flex items-center">
+                <Smartphone className="mr-3 h-6 w-6 text-cyan-400" />
+                Connected Devices
+              </h2>
+              {webUSBSupported && (
+                <Button
+                  onClick={requestUSBDevice}
+                  disabled={scanningForDevices}
+                  className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
+                >
+                  <Usb className="mr-2 h-4 w-4" />
+                  {scanningForDevices ? 'Suche...' : 'Gerät verbinden'}
+                </Button>
+              )}
+            </div>
+            
+            {!webUSBSupported && (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4">
+                <p className="text-yellow-400 text-sm">
+                  ⚠️ WebUSB wird von diesem Browser nicht unterstützt. 
+                  Bitte nutzen Sie Chrome, Edge oder Opera für die USB-Geräteerkennung.
+                </p>
+              </div>
+            )}
+            
+            {connectedDevices.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-700/50 flex items-center justify-center">
+                  <Usb className="w-10 h-10 text-gray-500" />
+                </div>
+                <p className="text-gray-400 text-lg mb-2">Keine Geräte verbunden</p>
+                <p className="text-gray-500 text-sm mb-4">
+                  {webUSBSupported 
+                    ? 'Klicken Sie auf "Gerät verbinden" und schließen Sie ein USB-C Gerät an'
+                    : 'Wechseln Sie zu einem unterstützten Browser, um USB-Geräte zu erkennen'
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {connectedDevices.map((device) => (
+                  <Card key={device.id} className="p-5 bg-gray-700 hover:bg-gray-600 transition-colors">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center">
+                          {device.type === 'laptop' ? (
+                            <Laptop className="w-6 h-6 text-blue-400" />
+                          ) : (
+                            <Smartphone className="w-6 h-6 text-purple-400" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-white">{device.name}</div>
+                          <div className="text-sm text-gray-400">
+                            {device.model}
+                            {device.vendorId && device.productId && (
+                              <span className="ml-2 text-xs">
+                                (VID: {device.vendorId.toString(16).toUpperCase()}, 
+                                 PID: {device.productId.toString(16).toUpperCase()})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        onClick={() => handleDisconnectDevice(device.id)}
+                      >
+                        <Power className="h-4 w-4 mr-2" />
+                        Trennen
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-400">CPU</span>
+                          <span className="text-cyan-400">{device.cpu}%</span>
+                        </div>
+                        <Progress value={device.cpu} className="h-1.5" indicatorClassName="bg-cyan-400" />
                       </div>
                       <div>
-                        <div className="font-semibold text-white">{device.name}</div>
-                        <div className="text-sm text-gray-400">{device.model}</div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-400">GPU</span>
+                          <span className="text-purple-400">{device.gpu}%</span>
+                        </div>
+                        <Progress value={device.gpu} className="h-1.5" indicatorClassName="bg-purple-400" />
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10">
-                      <Power className="h-4 w-4 mr-2" />
-                      Trennen
-                    </Button>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-400">CPU</span>
-                        <span className="text-cyan-400">{device.cpu}%</span>
-                      </div>
-                      <Progress value={device.cpu} className="h-1.5" indicatorClassName="bg-cyan-400" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-400">GPU</span>
-                        <span className="text-purple-400">{device.gpu}%</span>
-                      </div>
-                      <Progress value={device.gpu} className="h-1.5" indicatorClassName="bg-purple-400" />
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </Card>
 
           <div className="text-center mt-12">
