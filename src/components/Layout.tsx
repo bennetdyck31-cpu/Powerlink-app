@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Cable, Home, Link as LinkIcon, ListTodo, TrendingUp, Settings, Moon, Sun } from 'lucide-react'
+import { Cable, Home, Link as LinkIcon, TrendingUp, Settings, Moon, Sun } from 'lucide-react'
 import { Button } from './ui/button'
 import { useState } from 'react'
 
@@ -15,7 +15,6 @@ const Layout = ({ children }: LayoutProps) => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: Home },
     { path: '/connect', label: 'Connect', icon: LinkIcon },
-    { path: '/tasks', label: 'Tasks', icon: ListTodo },
     { path: '/performance', label: 'Performance', icon: TrendingUp },
     { path: '/settings', label: 'Settings', icon: Settings },
   ]

@@ -1,23 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Cable, Smartphone, Laptop, Loader2, Cpu, HardDrive, Battery } from 'lucide-react'
+import { Cable, Smartphone, Laptop, Loader2, Cpu, HardDrive, Battery, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { Badge } from '@/components/ui/badge'
 
 const Connect = () => {
-  const [scanning, setScanning] = useState(false)
+  const [scanning, setScanning] = useState(true)
   const [scanProgress, setScanProgress] = useState(0)
   const [deviceFound, setDeviceFound] = useState(false)
   const [deviceInfo, setDeviceInfo] = useState<any>(null)
 
-  const startScan = () => {
-    setScanning(true)
-    setScanProgress(0)
-    setDeviceFound(false)
-    setDeviceInfo(null)
-
-    // Simuliere Scan
+  useEffect(() => {
     const interval = setInterval(() => {
       setScanProgress(prev => {
         if (prev >= 100) {
@@ -30,22 +25,25 @@ const Connect = () => {
             type: 'phone',
             cpu: '6 Kerne',
             ram: '8 GB',
-            battery: 85
+            battery: 85,
+            connection: 'USB-C (Kabel)'
           })
           return 100
         }
         return prev + 5
       })
     }, 150)
-  }
+
+    return () => clearInterval(interval)
+  }, [])
 
   const connectDevice = () => {
-    alert('Gerät verbunden! (Demo)')
+    alert('Gerät verbunden! Offline-Modus aktiviert.')
     window.location.href = '/'
   }
 
-  const cancelScan = () => {
-    setScanning(false)
+  const rescan = () => {
+    setScanning(true)
     setScanProgress(0)
     setDeviceFound(false)
     setDeviceInfo(null)
@@ -53,90 +51,53 @@ const Connect = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-purple-900 relative overflow-hidden">
-      {/* Background Blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute top-20 -left-40 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"
-          animate={{
-            x: [0, 100, 0],
-            y: [0, 80, 0],
-          }}
+          animate={{ x: [0, 100, 0], y: [0, 80, 0] }}
           transition={{ duration: 20, repeat: Infinity }}
         />
       </div>
 
       <div className="relative z-10 container mx-auto px-4 py-20">
-        {/* Hero */}
-        <motion.div
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <motion.div className="text-center mb-16" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center">
             <Cable className="w-12 h-12 text-white" />
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent mb-4">
             Gerät verbinden
           </h1>
-          <p className="text-xl text-gray-300">
-            Stecke dein Kabel ein und lass uns dein Gerät erkennen
+          <p className="text-xl text-gray-300 mb-4">
+            Lokale Kabelverbindung – Kein Internet erforderlich
           </p>
+          <Badge variant="success" className="text-base px-4 py-2">
+            <WifiOff className="w-4 h-4 mr-2" />
+            Offline-Modus
+          </Badge>
         </motion.div>
 
-        {/* Scan Interface */}
-        <motion.div
-          className="max-w-2xl mx-auto"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-        >
+        <motion.div className="max-w-2xl mx-auto" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
           <Card className="p-8">
             <h2 className="text-xl font-bold mb-6 text-center">
-              Kabel einstecken
+              Automatische Geräteerkennung
             </h2>
-
-            {!scanning && !deviceFound && (
-              <div className="text-center py-12">
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
-                  onClick={startScan}
-                >
-                  <Cable className="mr-2 h-5 w-5" />
-                  Scan starten
-                </Button>
-              </div>
-            )}
 
             {scanning && (
               <div className="py-12">
                 <div className="flex justify-center mb-6">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  >
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
                     <Loader2 className="w-16 h-16 text-cyan-400" />
                   </motion.div>
                 </div>
                 <Progress value={scanProgress} className="h-2 mb-4" />
                 <p className="text-center text-gray-400">
-                  Scanne nach Geräten... {scanProgress}%
+                  Scanne nach Geräten über USB-C/Thunderbolt... {scanProgress}%
                 </p>
-                <div className="text-center mt-6">
-                  <Button variant="outline" onClick={cancelScan}>
-                    Abbrechen
-                  </Button>
-                </div>
               </div>
             )}
 
             {deviceFound && deviceInfo && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
-              >
-                {/* Device Card */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                 <Card className="p-6 bg-gray-700">
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center">
@@ -146,13 +107,13 @@ const Connect = () => {
                         <Laptop className="w-8 h-8 text-blue-400" />
                       )}
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <h3 className="text-2xl font-bold text-white">{deviceInfo.name}</h3>
                       <p className="text-gray-400">{deviceInfo.model}</p>
+                      <Badge variant="success" className="mt-2">{deviceInfo.connection}</Badge>
                     </div>
                   </div>
 
-                  {/* Specs Grid */}
                   <div className="grid grid-cols-3 gap-4 mb-6">
                     <div className="text-center p-4 bg-gray-800 rounded-lg">
                       <Cpu className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
@@ -171,7 +132,6 @@ const Connect = () => {
                     </div>
                   </div>
 
-                  {/* Battery Progress */}
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-gray-400">Batteriestatus</span>
@@ -181,21 +141,12 @@ const Connect = () => {
                   </div>
                 </Card>
 
-                {/* Action Buttons */}
                 <div className="flex gap-4">
-                  <Button
-                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                    size="lg"
-                    onClick={connectDevice}
-                  >
-                    Verbinden
+                  <Button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600" size="lg" onClick={connectDevice}>
+                    Verbinden (Offline)
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={cancelScan}
-                  >
-                    Abbrechen
+                  <Button variant="outline" size="lg" onClick={rescan}>
+                    Neu scannen
                   </Button>
                 </div>
               </motion.div>
