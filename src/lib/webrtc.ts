@@ -1,4 +1,5 @@
 import Peer, { DataConnection } from 'peerjs'
+import { connectionManager, ConnectionType } from './connection-manager'
 
 export interface DeviceInfo {
   id: string
@@ -9,6 +10,7 @@ export interface DeviceInfo {
   ram: number
   model: string
   os: string
+  connectionType?: ConnectionType
 }
 
 export interface RTCMessage {
@@ -74,7 +76,8 @@ class WebRTCManager {
       gpu: 0,
       ram: (navigator as any).deviceMemory || 4,
       model: model,
-      os: os
+      os: os,
+      connectionType: 'internet' // Wird später aktualisiert
     }
   }
 
@@ -103,16 +106,27 @@ class WebRTCManager {
 
   // Initialisiere als Host (Gerät 1 - zeigt QR-Code an)
   async initializeAsHost(): Promise<string> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
-        // Verwende öffentlichen PeerJS Server
+        // Erkenne Verbindungstyp
+        await connectionManager.detectUSBTethering()
+        const networkInfo = await connectionManager.getNetworkInfo()
+        
+        console.log('🔌 Netzwerk-Info:', networkInfo)
+        console.log(`📡 Verbindungsmodus: ${networkInfo.type}`)
+        if (networkInfo.localIP) {
+          console.log(`🌐 Lokale IP: ${networkInfo.localIP}`)
+        }
+
+        // Hole optimale ICE-Server (leer bei USB/local WiFi)
+        const iceServers = connectionManager.getICEServers()
+        
+        // Verwende öffentlichen PeerJS Server für Signaling
+        // Aber ICE-Server werden nur bei Internet-Verbindung genutzt
         this.peer = new Peer({
           debug: 2,
           config: {
-            iceServers: [
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:stun1.l.google.com:19302' }
-            ]
+            iceServers: iceServers
           }
         })
 
@@ -143,15 +157,22 @@ class WebRTCManager {
 
   // Verbinde als Client (Gerät 2 - scannt QR-Code)
   async connectToHost(hostPeerId: string): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
+        // Erkenne Verbindungstyp
+        await connectionManager.detectUSBTethering()
+        const networkInfo = await connectionManager.getNetworkInfo()
+        
+        console.log('🔌 Client Netzwerk-Info:', networkInfo)
+        console.log(`📡 Verbindungsmodus: ${networkInfo.type}`)
+
+        // Hole optimale ICE-Server
+        const iceServers = connectionManager.getICEServers()
+        
         this.peer = new Peer({
           debug: 2,
           config: {
-            iceServers: [
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:stun1.l.google.com:19302' }
-            ]
+            iceServers: iceServers
           }
         })
 

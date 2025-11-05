@@ -10,7 +10,9 @@ import {
   QrCode,
   AlertTriangle,
   Wifi,
-  WifiOff
+  WifiOff,
+  Usb,
+  Network
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -18,6 +20,7 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { webrtcManager, DeviceInfo } from '@/lib/webrtc'
 import { QRCodeSVG } from 'qrcode.react'
+import { connectionManager, ConnectionType } from '@/lib/connection-manager'
 
 // Technisch optimales Maximum: 4 Geräte
 // Begründung: WebRTC-Bandbreite, CPU-Overhead (~20%), P2P-Sync-Komplexität
@@ -36,9 +39,31 @@ const Dashboard = () => {
   const [cpuUsage, setCpuUsage] = useState(0)
   const [deviceCpuUsage, setDeviceCpuUsage] = useState(0)
   const [individualDeviceCPU, setIndividualDeviceCPU] = useState<Record<string, number>>({})
+  const [connectionType, setConnectionType] = useState<ConnectionType>('internet')
+  const [localIP, setLocalIP] = useState<string | null>(null)
 
   // Berechne Verbindungsstatus basierend auf tatsächlich verbundenen Geräten
   const isConnected = connectedDevices.length > 0
+
+  // Erkenne Verbindungstyp beim Start
+  useEffect(() => {
+    const detectConnection = async () => {
+      const networkInfo = await connectionManager.getNetworkInfo()
+      setConnectionType(networkInfo.type)
+      setLocalIP(networkInfo.localIP || null)
+      
+      console.log('📡 Dashboard Verbindungstyp:', networkInfo.type)
+      if (networkInfo.localIP) {
+        console.log('🌐 Lokale IP:', networkInfo.localIP)
+      }
+    }
+    
+    detectConnection()
+    
+    // Aktualisiere alle 5 Sekunden
+    const interval = setInterval(detectConnection, 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Echtzeit CPU-Verbrauch messen (so akkurat wie im Browser möglich)
   useEffect(() => {
@@ -346,6 +371,46 @@ const Dashboard = () => {
       </div>
 
       <div className="relative z-10">
+        {/* Verbindungstyp-Anzeige oben rechts */}
+        <div className="absolute top-4 right-4 z-20">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-2"
+          >
+            <Badge 
+              variant="outline" 
+              className={`
+                text-sm px-3 py-1.5 flex items-center gap-2
+                ${connectionType === 'usb-tethering' ? 'bg-green-500/20 border-green-500 text-green-400' : ''}
+                ${connectionType === 'local-wifi' ? 'bg-blue-500/20 border-blue-500 text-blue-400' : ''}
+                ${connectionType === 'internet' ? 'bg-purple-500/20 border-purple-500 text-purple-400' : ''}
+              `}
+            >
+              {connectionType === 'usb-tethering' && (
+                <>
+                  <Usb className="w-4 h-4" />
+                  USB-Kabel
+                  {localIP && <span className="text-xs opacity-75">({localIP})</span>}
+                </>
+              )}
+              {connectionType === 'local-wifi' && (
+                <>
+                  <Network className="w-4 h-4" />
+                  Lokales WiFi
+                  {localIP && <span className="text-xs opacity-75">({localIP})</span>}
+                </>
+              )}
+              {connectionType === 'internet' && (
+                <>
+                  <Wifi className="w-4 h-4" />
+                  Internet
+                </>
+              )}
+            </Badge>
+          </motion.div>
+        </div>
+
         <motion.div 
           className="min-h-screen flex flex-col items-center justify-center px-4 py-20"
           initial={{ opacity: 0, y: 20 }}
@@ -466,6 +531,33 @@ const Dashboard = () => {
                 <h3 className="text-xl font-bold text-gray-800 mb-4">
                   📱 Scanne diesen QR-Code mit dem anderen Gerät
                 </h3>
+                
+                {/* Connection Type Info */}
+                <div className="mb-4 p-3 bg-gray-100 rounded-lg">
+                  <p className="text-sm text-gray-700 font-semibold mb-2">
+                    {connectionType === 'usb-tethering' && (
+                      <>🔌 USB-Tethering erkannt - Offline-Verbindung aktiv!</>
+                    )}
+                    {connectionType === 'local-wifi' && (
+                      <>📡 Lokales WiFi - Keine Internet-Verbindung nötig</>
+                    )}
+                    {connectionType === 'internet' && (
+                      <>🌐 Internet-Verbindung - Funktioniert überall</>
+                    )}
+                  </p>
+                  {localIP && (
+                    <p className="text-xs text-gray-600">
+                      Lokale IP: {localIP}
+                      {connectionType === 'usb-tethering' && ' (USB-Netzwerk)'}
+                    </p>
+                  )}
+                  {connectionType === 'usb-tethering' && (
+                    <p className="text-xs text-green-700 mt-1 font-medium">
+                      ✅ Beste Performance - Kabelgebunden & Offline
+                    </p>
+                  )}
+                </div>
+
                 <div className="bg-white p-4 rounded-lg shadow-lg">
                   <QRCodeSVG 
                     value={`https://supafer.netlify.app/connect?peer=${myPeerId}`}
