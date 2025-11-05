@@ -1,17 +1,12 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
-  Activity, 
   Laptop, 
   Smartphone, 
   TrendingUp, 
   Gauge, 
   Zap, 
   Power,
-  Download,
-  Share2,
-  Video,
-  X,
   Usb,
   AlertTriangle
 } from 'lucide-react'
@@ -19,7 +14,6 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 // Technisch optimales Maximum: 4 Geräte
 // Begründung: USB-Bandbreite (1.25 Gbit/s/Gerät), CPU-Overhead (~20%), Sync-Komplexität (6 Verbindungen)
@@ -38,9 +32,6 @@ interface USBDeviceInfo {
 }
 
 const Dashboard = () => {
-  const [showBenchmark, setShowBenchmark] = useState(false)
-  const [benchmarkRunning, setBenchmarkRunning] = useState(false)
-  const [benchmarkScore, setBenchmarkScore] = useState(0)
   const [connectedDevices, setConnectedDevices] = useState<USBDeviceInfo[]>([])
   const [webUSBSupported, setWebUSBSupported] = useState(false)
   const [scanningForDevices, setScanningForDevices] = useState(false)
@@ -363,22 +354,6 @@ const Dashboard = () => {
         }
       ]
 
-  const runBenchmark = () => {
-    setBenchmarkRunning(true)
-    setBenchmarkScore(0)
-    
-    const interval = setInterval(() => {
-      setBenchmarkScore(prev => {
-        if (prev >= 789) {
-          clearInterval(interval)
-          setBenchmarkRunning(false)
-          return 789
-        }
-        return prev + 15
-      })
-    }, 50)
-  }
-
   const dots = Array.from({ length: 120 }, (_, i) => {
     const angle = (i / 120) * Math.PI * 2
     const radius = 180
@@ -435,21 +410,9 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-6xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent mb-4">
+          <h1 className="text-6xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent mb-12">
             PowerLink
           </h1>
-          <p className="text-2xl text-gray-300 mb-12">
-            Verbinde Geräte – 80% schneller AI
-          </p>
-
-          <Button
-            size="lg"
-            className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white shadow-xl hover:shadow-2xl transition-all hover:scale-105 mb-20"
-            onClick={() => setShowBenchmark(true)}
-          >
-            <Activity className="mr-2 h-5 w-5" />
-            Benchmark starten
-          </Button>
 
           <div className={`grid gap-6 w-full max-w-6xl mb-16 ${isConnected ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'}`}>
             {stats.map((stat, idx) => (
@@ -667,125 +630,8 @@ const Dashboard = () => {
               </div>
             )}
           </Card>
-
-          <div className="text-center mt-12">
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 shadow-xl"
-              onClick={() => setShowBenchmark(true)}
-            >
-              <Activity className="mr-2 h-5 w-5" />
-              CPU & GPU Benchmark starten
-            </Button>
-            <p className="text-sm text-gray-400 mt-3">
-              Externe Tools messen nicht die Power – unser Test tut's!
-            </p>
-          </div>
         </motion.div>
       </div>
-
-      {showBenchmark && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-3xl p-6"
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Benchmark</h2>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => {
-                  setShowBenchmark(false)
-                  setBenchmarkRunning(false)
-                  setBenchmarkScore(0)
-                }}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-
-            <Tabs defaultValue="cpu" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="cpu">CPU Test</TabsTrigger>
-                <TabsTrigger value="gpu">GPU Test</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="cpu" className="space-y-6">
-                {!benchmarkRunning && benchmarkScore === 0 && (
-                  <Button 
-                    className="w-full bg-gradient-to-r from-cyan-500 to-purple-500"
-                    onClick={runBenchmark}
-                  >
-                    <Activity className="mr-2 h-5 w-5" />
-                    Test starten
-                  </Button>
-                )}
-
-                {benchmarkRunning && (
-                  <div className="flex flex-col items-center py-12">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full mb-4"
-                    />
-                    <p className="text-gray-400">Benchmark läuft...</p>
-                  </div>
-                )}
-
-                {benchmarkScore > 0 && !benchmarkRunning && (
-                  <div className="space-y-6">
-                    <div className="text-center py-8">
-                      <div className="text-6xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent mb-2">
-                        {benchmarkScore}
-                      </div>
-                      <Badge variant="success" className="text-lg px-4 py-1">
-                        +72% Boost
-                      </Badge>
-                    </div>
-
-                    <div className="bg-gray-700 rounded-lg p-6">
-                      <div className="h-48 flex items-end gap-2">
-                        {Array.from({ length: 10 }, (_, i) => (
-                          <motion.div
-                            key={i}
-                            className="flex-1 bg-gradient-to-t from-cyan-500 to-purple-500 rounded-t"
-                            initial={{ height: 0 }}
-                            animate={{ height: `${Math.min(100, (benchmarkScore / 789) * 100 * (i + 1) / 10)}%` }}
-                            transition={{ delay: i * 0.05 }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <Button variant="outline" className="flex-1">
-                        <Download className="mr-2 h-4 w-4" />
-                        PDF
-                      </Button>
-                      <Button variant="outline" className="flex-1">
-                        <Share2 className="mr-2 h-4 w-4" />
-                        Teilen
-                      </Button>
-                      <Button variant="outline" className="flex-1">
-                        <Video className="mr-2 h-4 w-4" />
-                        Aufnehmen
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="gpu" className="space-y-6">
-                <div className="text-center py-12 text-gray-400">
-                  GPU Test - Coming Soon
-                </div>
-              </TabsContent>
-            </Tabs>
-          </motion.div>
-        </div>
-      )}
     </div>
   )
 }
