@@ -46,6 +46,7 @@ const Dashboard = () => {
   const [scanningForDevices, setScanningForDevices] = useState(false)
   const [cpuUsage, setCpuUsage] = useState(0)
   const [deviceCpuUsage, setDeviceCpuUsage] = useState(0)
+  const [individualDeviceCPU, setIndividualDeviceCPU] = useState<Record<number, number>>({})
 
   // Berechne Verbindungsstatus basierend auf tatsächlich verbundenen Geräten
   const isConnected = connectedDevices.length > 0
@@ -104,20 +105,22 @@ const Dashboard = () => {
     }
   }, [])
 
-  // Multi-Device CPU-Auslastung (aggregiert alle Geräte)
+  // Multi-Device CPU-Auslastung (aggregiert alle Geräte + individuell)
   useEffect(() => {
     if (!isConnected || connectedDevices.length === 0) {
       setDeviceCpuUsage(0)
+      setIndividualDeviceCPU({})
       return
     }
 
-    // Berechne aggregierte CPU-Last aller verbundenen Geräte
+    // Berechne aggregierte CPU-Last aller verbundenen Geräte + individuelle Werte
     const updateMultiDeviceCPU = () => {
       // Load-Balancing: Verteile Last gleichmäßig auf alle Geräte
       const totalDevices = connectedDevices.length
       
       // Jedes Gerät trägt zur Gesamtlast bei
       let totalCPU = 0
+      const newIndividualCPU: Record<number, number> = {}
       
       connectedDevices.forEach((device) => {
         const baseCPU = device.cpu || 50
@@ -129,6 +132,10 @@ const Dashboard = () => {
         const variation = (Math.random() - 0.5) * 15
         const deviceLoad = (baseCPU * loadBalancingFactor) + variation
         
+        // Speichere individuellen Wert für dieses Gerät
+        const individualCPU = Math.max(20, Math.min(95, deviceLoad))
+        newIndividualCPU[device.id] = Math.round(individualCPU)
+        
         totalCPU += deviceLoad
       })
       
@@ -139,11 +146,12 @@ const Dashboard = () => {
       const clampedCPU = Math.max(20, Math.min(90, avgCPU))
       
       setDeviceCpuUsage(Math.round(clampedCPU))
+      setIndividualDeviceCPU(newIndividualCPU)
     }
 
-    // Initial + alle 3 Sekunden aktualisieren
+    // Initial + alle 2 Sekunden aktualisieren (schneller für Echtzeit-Feeling)
     updateMultiDeviceCPU()
-    const interval = setInterval(updateMultiDeviceCPU, 3000)
+    const interval = setInterval(updateMultiDeviceCPU, 2000)
 
     return () => clearInterval(interval)
   }, [isConnected, connectedDevices])
@@ -560,59 +568,102 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {connectedDevices.map((device) => (
-                  <Card key={device.id} className="p-5 bg-gray-700 hover:bg-gray-600 transition-colors">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center">
-                          {device.type === 'laptop' ? (
-                            <Laptop className="w-6 h-6 text-blue-400" />
-                          ) : (
-                            <Smartphone className="w-6 h-6 text-purple-400" />
-                          )}
+                {connectedDevices.map((device, index) => {
+                  const currentCPU = individualDeviceCPU[device.id] || device.cpu
+                  
+                  return (
+                    <motion.div
+                      key={device.id}
+                      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                    >
+                      <Card className="p-5 bg-gradient-to-br from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 transition-all border-l-4 border-l-cyan-400">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-4">
+                            <motion.div 
+                              className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center"
+                              animate={{ 
+                                boxShadow: currentCPU > 70 
+                                  ? '0 0 20px rgba(59, 130, 246, 0.5)' 
+                                  : '0 0 10px rgba(59, 130, 246, 0.2)' 
+                              }}
+                              transition={{ duration: 0.5 }}
+                            >
+                              {device.type === 'laptop' ? (
+                                <Laptop className="w-6 h-6 text-blue-400" />
+                              ) : (
+                                <Smartphone className="w-6 h-6 text-purple-400" />
+                              )}
+                            </motion.div>
+                            <div>
+                              <div className="font-semibold text-white flex items-center gap-2">
+                                {device.name}
+                                <Badge variant="outline" className="text-xs">
+                                  Gerät #{index + 1}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-gray-400">
+                                {device.model}
+                                {device.vendorId && device.productId && (
+                                  <span className="ml-2 text-xs">
+                                    (VID: {device.vendorId.toString(16).toUpperCase()}, 
+                                     PID: {device.productId.toString(16).toUpperCase()})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                            onClick={() => handleDisconnectDevice(device.id)}
+                          >
+                            <Power className="h-4 w-4 mr-2" />
+                            Trennen
+                          </Button>
                         </div>
-                        <div>
-                          <div className="font-semibold text-white">{device.name}</div>
-                          <div className="text-sm text-gray-400">
-                            {device.model}
-                            {device.vendorId && device.productId && (
-                              <span className="ml-2 text-xs">
-                                (VID: {device.vendorId.toString(16).toUpperCase()}, 
-                                 PID: {device.productId.toString(16).toUpperCase()})
-                              </span>
-                            )}
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-400">CPU Echtzeit</span>
+                              <motion.span 
+                                className={`font-bold ${
+                                  currentCPU > 80 ? 'text-red-400' : 
+                                  currentCPU > 60 ? 'text-orange-400' : 
+                                  'text-cyan-400'
+                                }`}
+                                animate={{ scale: [1, 1.1, 1] }}
+                                transition={{ duration: 0.5 }}
+                              >
+                                {currentCPU}%
+                              </motion.span>
+                            </div>
+                            <Progress 
+                              value={currentCPU} 
+                              className="h-2" 
+                              indicatorClassName={
+                                currentCPU > 80 ? 'bg-red-400' : 
+                                currentCPU > 60 ? 'bg-orange-400' : 
+                                'bg-cyan-400'
+                              } 
+                            />
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-400">GPU</span>
+                              <span className="text-purple-400">{device.gpu}%</span>
+                            </div>
+                            <Progress value={device.gpu} className="h-1.5" indicatorClassName="bg-purple-400" />
                           </div>
                         </div>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                        onClick={() => handleDisconnectDevice(device.id)}
-                      >
-                        <Power className="h-4 w-4 mr-2" />
-                        Trennen
-                      </Button>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-400">CPU</span>
-                          <span className="text-cyan-400">{device.cpu}%</span>
-                        </div>
-                        <Progress value={device.cpu} className="h-1.5" indicatorClassName="bg-cyan-400" />
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-400">GPU</span>
-                          <span className="text-purple-400">{device.gpu}%</span>
-                        </div>
-                        <Progress value={device.gpu} className="h-1.5" indicatorClassName="bg-purple-400" />
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                      </Card>
+                    </motion.div>
+                  )
+                })}
               </div>
             )}
           </Card>
