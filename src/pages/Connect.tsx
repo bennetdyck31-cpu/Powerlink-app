@@ -18,9 +18,28 @@ interface DeviceInfo {
 }
 
 // Geräteerkennung über User-Agent
-const detectDevice = (): DeviceInfo => {
+const detectDevice = async (): Promise<DeviceInfo> => {
   const ua = navigator.userAgent
   const platform = navigator.platform
+  
+  // Echte Hardware-Daten auslesen
+  const cpuCores = navigator.hardwareConcurrency || 4
+  const deviceMemory = (navigator as any).deviceMemory || 8 // GB
+  
+  // Batteriestatus (falls verfügbar)
+  let batteryLevel = 0
+  let batteryCharging = false
+  
+  try {
+    if ('getBattery' in navigator) {
+      const battery = await (navigator as any).getBattery()
+      batteryLevel = Math.round(battery.level * 100)
+      batteryCharging = battery.charging
+    }
+  } catch (e) {
+    // Fallback wenn Battery API nicht verfügbar
+    batteryLevel = 100
+  }
   
   // iOS/iPadOS Erkennung
   const isIOS = /iPad|iPhone|iPod/.test(ua)
@@ -34,10 +53,10 @@ const detectDevice = (): DeviceInfo => {
       name: 'iPad',
       model: getIPadModel(model),
       type: 'tablet',
-      cpu: 'Apple Silicon',
-      ram: '8 GB',
-      battery: Math.floor(Math.random() * 30) + 70,
-      connection: 'USB-C / WiFi',
+      cpu: `${cpuCores} Kerne`,
+      ram: `${deviceMemory} GB`,
+      battery: batteryLevel || 95,
+      connection: batteryCharging ? 'USB-C (lädt)' : 'WiFi',
       os: 'iPadOS ' + (ua.match(/OS (\d+)_/)?.[1] || '17')
     }
   } else if (ua.includes('iPhone')) {
@@ -47,10 +66,10 @@ const detectDevice = (): DeviceInfo => {
       name: 'iPhone',
       model: getIPhoneModel(model),
       type: 'phone',
-      cpu: 'A17 Pro',
-      ram: '8 GB',
-      battery: Math.floor(Math.random() * 30) + 70,
-      connection: 'USB-C',
+      cpu: `${cpuCores} Kerne`,
+      ram: `${deviceMemory} GB`,
+      battery: batteryLevel || 85,
+      connection: batteryCharging ? 'USB-C (lädt)' : 'WiFi',
       os: 'iOS ' + (ua.match(/OS (\d+)_/)?.[1] || '17')
     }
   } else if (/Android/.test(ua)) {
@@ -61,10 +80,10 @@ const detectDevice = (): DeviceInfo => {
       name: isTablet ? 'Android Tablet' : 'Android Phone',
       model: manufacturer,
       type: isTablet ? 'tablet' : 'phone',
-      cpu: 'Snapdragon/Exynos',
-      ram: '8-12 GB',
-      battery: Math.floor(Math.random() * 30) + 70,
-      connection: 'USB-C',
+      cpu: `${cpuCores} Kerne`,
+      ram: `${deviceMemory} GB`,
+      battery: batteryLevel || 75,
+      connection: batteryCharging ? 'USB-C (lädt)' : 'WiFi',
       os: 'Android ' + (ua.match(/Android (\d+)/)?.[1] || '14')
     }
   } else if (/Mac/.test(platform)) {
@@ -73,10 +92,10 @@ const detectDevice = (): DeviceInfo => {
       name: 'MacBook',
       model: ua.includes('Mac') ? 'Pro/Air' : 'Desktop',
       type: 'laptop',
-      cpu: 'Apple M-Series',
-      ram: '16 GB',
-      battery: Math.floor(Math.random() * 30) + 70,
-      connection: 'USB-C / Thunderbolt',
+      cpu: `${cpuCores} Kerne`,
+      ram: `${deviceMemory} GB`,
+      battery: batteryLevel || 90,
+      connection: batteryCharging ? 'USB-C (lädt)' : 'Thunderbolt',
       os: 'macOS'
     }
   } else if (/Win/.test(platform)) {
@@ -85,10 +104,10 @@ const detectDevice = (): DeviceInfo => {
       name: 'Windows PC',
       model: 'Desktop/Laptop',
       type: 'laptop',
-      cpu: 'Intel/AMD',
-      ram: '16 GB',
-      battery: Math.floor(Math.random() * 30) + 50,
-      connection: 'USB-C',
+      cpu: `${cpuCores} Kerne`,
+      ram: `${deviceMemory} GB`,
+      battery: batteryLevel || 100,
+      connection: batteryCharging ? 'USB-C (lädt)' : 'USB-C',
       os: 'Windows 11'
     }
   }
@@ -98,9 +117,9 @@ const detectDevice = (): DeviceInfo => {
     name: 'Unbekanntes Gerät',
     model: 'Nicht erkannt',
     type: 'laptop',
-    cpu: 'N/A',
-    ram: 'N/A',
-    battery: 0,
+    cpu: `${cpuCores} Kerne`,
+    ram: `${deviceMemory} GB`,
+    battery: batteryLevel || 0,
     connection: 'USB',
     os: 'Unbekannt'
   }
@@ -141,8 +160,8 @@ const Connect = () => {
           clearInterval(interval)
           setScanning(false)
           setDeviceFound(true)
-          // Echte Geräteerkennung
-          setDeviceInfo(detectDevice())
+          // Echte Geräteerkennung (async)
+          detectDevice().then(device => setDeviceInfo(device))
           return 100
         }
         return prev + 5
