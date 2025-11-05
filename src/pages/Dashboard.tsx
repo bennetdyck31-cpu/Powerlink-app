@@ -17,7 +17,7 @@ import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { webrtcManager, DeviceInfo } from '@/lib/webrtc'
-import QRCode from 'qrcode.react'
+import { QRCodeSVG } from 'qrcode.react'
 
 // Technisch optimales Maximum: 4 Geräte
 // Begründung: WebRTC-Bandbreite, CPU-Overhead (~20%), P2P-Sync-Komplexität
@@ -467,7 +467,7 @@ const Dashboard = () => {
                   📱 Scanne diesen QR-Code mit dem anderen Gerät
                 </h3>
                 <div className="bg-white p-4 rounded-lg shadow-lg">
-                  <QRCode 
+                  <QRCodeSVG 
                     value={`https://supafer.netlify.app/connect?peer=${myPeerId}`}
                     size={256}
                     level="H"
