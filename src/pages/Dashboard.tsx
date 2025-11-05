@@ -7,37 +7,35 @@ import {
   Gauge, 
   Zap, 
   Power,
-  Usb,
-  AlertTriangle
+  QrCode,
+  AlertTriangle,
+  Wifi,
+  WifiOff
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
+import { webrtcManager, DeviceInfo } from '@/lib/webrtc'
+import QRCode from 'qrcode.react'
 
 // Technisch optimales Maximum: 4 Geräte
-// Begründung: USB-Bandbreite (1.25 Gbit/s/Gerät), CPU-Overhead (~20%), Sync-Komplexität (6 Verbindungen)
+// Begründung: WebRTC-Bandbreite, CPU-Overhead (~20%), P2P-Sync-Komplexität
 const MAX_DEVICES = 4
 
-interface USBDeviceInfo {
-  id: number
-  name: string
-  type: string
-  cpu: number
-  gpu: number
-  model: string
-  vendorId?: number
-  productId?: number
-  usbDevice?: USBDevice
+interface ConnectedDevice extends DeviceInfo {
+  connectedAt: number
+  lastUpdate: number
 }
 
 const Dashboard = () => {
-  const [connectedDevices, setConnectedDevices] = useState<USBDeviceInfo[]>([])
-  const [webUSBSupported, setWebUSBSupported] = useState(false)
-  const [scanningForDevices, setScanningForDevices] = useState(false)
+  const [connectedDevices, setConnectedDevices] = useState<ConnectedDevice[]>([])
+  const [showQRCode, setShowQRCode] = useState(false)
+  const [myPeerId, setMyPeerId] = useState<string | null>(null)
+  const [connecting, setConnecting] = useState(false)
   const [cpuUsage, setCpuUsage] = useState(0)
   const [deviceCpuUsage, setDeviceCpuUsage] = useState(0)
-  const [individualDeviceCPU, setIndividualDeviceCPU] = useState<Record<number, number>>({})
+  const [individualDeviceCPU, setIndividualDeviceCPU] = useState<Record<string, number>>({})
 
   // Berechne Verbindungsstatus basierend auf tatsächlich verbundenen Geräten
   const isConnected = connectedDevices.length > 0
@@ -111,7 +109,7 @@ const Dashboard = () => {
       
       // Jedes Gerät trägt zur Gesamtlast bei
       let totalCPU = 0
-      const newIndividualCPU: Record<number, number> = {}
+      const newIndividualCPU: Record<string, number> = {}
       
       connectedDevices.forEach((device) => {
         const baseCPU = device.cpu || 50
@@ -159,145 +157,89 @@ const Dashboard = () => {
     return `+${((totalBoost - 1) * 100).toFixed(0)}%`
   }
 
-  // Prüfe WebUSB Support
+  // WebRTC Manager Setup
   useEffect(() => {
-    setWebUSBSupported('usb' in navigator)
-  }, [])
+    // Event Listener für eingehende Verbindungen
+    webrtcManager.onConnect((deviceId, info) => {
+      console.log('✅ Gerät verbunden:', info)
+      
+      setConnectedDevices(prev => {
+        // Prüfe ob bereits vorhanden
+        if (prev.some(d => d.id === deviceId)) return prev
+        
+        // Prüfe Device-Limit
+        if (prev.length >= MAX_DEVICES) {
+          alert(`⚠️ Maximum erreicht!\n\nDu kannst maximal ${MAX_DEVICES} Geräte gleichzeitig verbinden.`)
+          webrtcManager.disconnectDevice(deviceId)
+          return prev
+        }
 
-  // USB Event Listener für automatische Erkennung
-  useEffect(() => {
-    if (!webUSBSupported) return
+        return [...prev, {
+          ...info,
+          id: deviceId,
+          connectedAt: Date.now(),
+          lastUpdate: Date.now()
+        }]
+      })
+    })
 
-    const handleConnect = async (event: USBConnectionEvent) => {
-      const device = event.device
-      console.log('USB Gerät angeschlossen:', device)
-      await addUSBDevice(device)
-    }
+    webrtcManager.onDisconnect((deviceId) => {
+      console.log('❌ Gerät getrennt:', deviceId)
+      setConnectedDevices(prev => prev.filter(d => d.id !== deviceId))
+    })
 
-    const handleDisconnect = (event: USBConnectionEvent) => {
-      const device = event.device
-      console.log('USB Gerät getrennt:', device)
-      setConnectedDevices(devices => 
-        devices.filter(d => d.usbDevice !== device)
-      )
-    }
-
-    navigator.usb.addEventListener('connect', handleConnect)
-    navigator.usb.addEventListener('disconnect', handleDisconnect)
-
-    // Lade bereits verbundene Geräte
-    loadExistingDevices()
+    webrtcManager.onPerformance((deviceId, data) => {
+      console.log('📊 Performance Update:', deviceId, data)
+      setConnectedDevices(prev => prev.map(d => 
+        d.id === deviceId 
+          ? { ...d, cpu: data.cpu, gpu: data.gpu, ram: data.ram, lastUpdate: Date.now() }
+          : d
+      ))
+    })
 
     return () => {
-      navigator.usb.removeEventListener('connect', handleConnect)
-      navigator.usb.removeEventListener('disconnect', handleDisconnect)
+      // Cleanup bei Component Unmount
+      webrtcManager.disconnectAll()
     }
-  }, [webUSBSupported])
+  }, [])
 
-  const loadExistingDevices = async () => {
-    if (!navigator.usb) return
-    
+  // Sende eigene Performance-Updates
+  useEffect(() => {
+    if (!isConnected) return
+
+    const interval = setInterval(() => {
+      webrtcManager.sendPerformanceUpdate(cpuUsage, 0, 0)
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [isConnected, cpuUsage])
+
+  // Zeige QR-Code an (Host-Modus)
+  const startHostMode = async () => {
+    setConnecting(true)
     try {
-      const devices = await navigator.usb.getDevices()
-      for (const device of devices) {
-        await addUSBDevice(device)
-      }
+      const peerId = await webrtcManager.initializeAsHost()
+      setMyPeerId(peerId)
+      setShowQRCode(true)
+      console.log('🔐 Host gestartet. Peer ID:', peerId)
     } catch (error) {
-      console.error('Fehler beim Laden von USB-Geräten:', error)
-    }
-  }
-
-  const addUSBDevice = async (usbDevice: USBDevice) => {
-    // Bestimme Gerätetyp basierend auf Vendor ID
-    const getDeviceType = (vendorId: number, productName?: string) => {
-      // Apple (0x05AC)
-      if (vendorId === 0x05AC) {
-        if (productName?.toLowerCase().includes('iphone')) return 'phone'
-        if (productName?.toLowerCase().includes('ipad')) return 'tablet'
-        return 'laptop'
-      }
-      // Samsung (0x04E8)
-      if (vendorId === 0x04E8) return 'phone'
-      // Google (0x18D1)
-      if (vendorId === 0x18D1) return 'phone'
-      return 'device'
-    }
-
-    const getDeviceName = (vendorId: number, productId: number) => {
-      // Apple Geräte
-      if (vendorId === 0x05AC) {
-        if (productId === 0x12A8) return 'iPhone 15 Pro'
-        if (productId === 0x12A0) return 'iPhone 15'
-        return 'Apple Device'
-      }
-      // Samsung
-      if (vendorId === 0x04E8) return 'Samsung Device'
-      // Google
-      if (vendorId === 0x18D1) return 'Google Pixel'
-      
-      return `USB Device (${vendorId.toString(16)}:${productId.toString(16)})`
-    }
-
-    const deviceInfo: USBDeviceInfo = {
-      id: Date.now(),
-      name: getDeviceName(usbDevice.vendorId, usbDevice.productId),
-      type: getDeviceType(usbDevice.vendorId, usbDevice.productName),
-      cpu: Math.floor(Math.random() * 30) + 40, // Simulierte Werte
-      gpu: Math.floor(Math.random() * 30) + 40,
-      model: usbDevice.productName || 'Unknown',
-      vendorId: usbDevice.vendorId,
-      productId: usbDevice.productId,
-      usbDevice: usbDevice
-    }
-
-    setConnectedDevices(devices => {
-      // Verhindere Duplikate
-      const exists = devices.some(d => d.usbDevice === usbDevice)
-      if (exists) return devices
-      
-      // Prüfe Device-Limit
-      if (devices.length >= MAX_DEVICES) {
-        alert(`⚠️ Maximum erreicht!\n\nDu kannst maximal ${MAX_DEVICES} Geräte gleichzeitig verbinden.\n\nGrund: Optimale Performance bei USB-Bandbreite (1.25 Gbit/s/Gerät) und CPU-Overhead (~${devices.length * 5}%).\n\nTrenne ein Gerät, um ein neues zu verbinden.`)
-        return devices
-      }
-      
-      return [...devices, deviceInfo]
-    })
-  }
-
-  const requestUSBDevice = async () => {
-    if (!navigator.usb) {
-      alert('WebUSB wird von diesem Browser nicht unterstützt. Bitte nutzen Sie Chrome, Edge oder Opera.')
-      return
-    }
-
-    // Prüfe ob Limit erreicht
-    if (connectedDevices.length >= MAX_DEVICES) {
-      alert(`⚠️ Maximum erreicht!\n\nDu hast bereits ${MAX_DEVICES} Geräte verbunden.\n\nTrenne ein Gerät, um ein neues zu verbinden.`)
-      return
-    }
-
-    setScanningForDevices(true)
-    try {
-      // Fordere Zugriff auf ein USB-Gerät an
-      const device = await navigator.usb.requestDevice({
-        filters: [
-          { vendorId: 0x05AC }, // Apple
-          { vendorId: 0x04E8 }, // Samsung
-          { vendorId: 0x18D1 }, // Google
-        ]
-      })
-
-      await addUSBDevice(device)
-    } catch (error) {
-      console.log('Gerätauswahl abgebrochen oder Fehler:', error)
+      console.error('Fehler beim Starten des Host-Modus:', error)
+      alert('Fehler beim Starten der Verbindung. Bitte erneut versuchen.')
     } finally {
-      setScanningForDevices(false)
+      setConnecting(false)
     }
   }
 
-  const handleDisconnectDevice = (deviceId: number) => {
+  const handleDisconnectDevice = (deviceId: string) => {
+    webrtcManager.disconnectDevice(deviceId)
     setConnectedDevices(devices => devices.filter(d => d.id !== deviceId))
+  }
+
+  const handleDisconnectAll = () => {
+    webrtcManager.disconnectAll()
+    setConnectedDevices([])
+    setShowQRCode(false)
+    setMyPeerId(null)
   }
 
   // Dynamische Stats - zeigt Multi-Device Status
@@ -483,53 +425,93 @@ const Dashboard = () => {
                 <Smartphone className="mr-3 h-6 w-6 text-cyan-400" />
                 Connected Devices ({connectedDevices.length}/{MAX_DEVICES})
               </h2>
-              {webUSBSupported && (
-                <div className="flex flex-col items-end gap-2">
+              <div className="flex flex-col items-end gap-2">
+                {!showQRCode ? (
                   <Button
-                    onClick={requestUSBDevice}
-                    disabled={scanningForDevices || connectedDevices.length >= MAX_DEVICES}
+                    onClick={startHostMode}
+                    disabled={connecting || connectedDevices.length >= MAX_DEVICES}
                     className={`${
                       connectedDevices.length >= MAX_DEVICES 
                         ? 'bg-gray-600 cursor-not-allowed' 
                         : 'bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600'
                     }`}
                   >
-                    <Usb className="mr-2 h-4 w-4" />
-                    {scanningForDevices ? 'Suche...' : connectedDevices.length >= MAX_DEVICES ? 'Maximum erreicht' : 'Gerät verbinden'}
+                    <QrCode className="mr-2 h-4 w-4" />
+                    {connecting ? 'Starte...' : connectedDevices.length >= MAX_DEVICES ? 'Maximum erreicht' : 'QR-Code anzeigen'}
                   </Button>
-                  {connectedDevices.length >= MAX_DEVICES && (
-                    <p className="text-xs text-orange-400 flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3" />
-                      Max. {MAX_DEVICES} Geräte für optimale Performance
-                    </p>
-                  )}
-                </div>
-              )}
+                ) : (
+                  <Button
+                    onClick={handleDisconnectAll}
+                    variant="destructive"
+                  >
+                    <WifiOff className="mr-2 h-4 w-4" />
+                    Alle trennen
+                  </Button>
+                )}
+                {connectedDevices.length >= MAX_DEVICES && (
+                  <p className="text-xs text-orange-400 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    Max. {MAX_DEVICES} Geräte für optimale Performance
+                  </p>
+                )}
+              </div>
             </div>
             
-            {!webUSBSupported && (
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4">
-                <p className="text-yellow-400 text-sm">
-                  ⚠️ WebUSB wird von diesem Browser nicht unterstützt. 
-                  Bitte nutzen Sie Chrome, Edge oder Opera für die USB-Geräteerkennung.
+            {showQRCode && myPeerId && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white p-6 rounded-lg mb-6 flex flex-col items-center"
+              >
+                <h3 className="text-xl font-bold text-gray-800 mb-4">
+                  📱 Scanne diesen QR-Code mit dem anderen Gerät
+                </h3>
+                <div className="bg-white p-4 rounded-lg shadow-lg">
+                  <QRCode 
+                    value={`https://supafer.netlify.app/connect?peer=${myPeerId}`}
+                    size={256}
+                    level="H"
+                    includeMargin={true}
+                  />
+                </div>
+                <p className="text-gray-600 mt-4 text-center max-w-md">
+                  Öffne die PowerLink App auf deinem anderen Gerät und scanne diesen Code, 
+                  um eine sichere Verbindung herzustellen.
+                </p>
+                <div className="mt-4 p-3 bg-gray-100 rounded text-center">
+                  <p className="text-xs text-gray-500 mb-1">Oder verwende diesen Link:</p>
+                  <code className="text-xs text-cyan-600 break-all">
+                    https://supafer.netlify.app/connect?peer={myPeerId}
+                  </code>
+                </div>
+              </motion.div>
+            )}
+            
+            {connecting && (
+              <div className="text-center py-12">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-16 h-16 mx-auto mb-4 border-4 border-cyan-500 border-t-transparent rounded-full"
+                />
+                <p className="text-cyan-400 text-lg mb-2">Verbindung wird vorbereitet...</p>
+                <p className="text-gray-500 text-sm">
+                  WebRTC-Verbindung wird initialisiert
                 </p>
               </div>
             )}
             
-            {connectedDevices.length === 0 ? (
+            {connectedDevices.length === 0 && !connecting && !showQRCode ? (
               <div className="text-center py-12">
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-700/50 flex items-center justify-center">
-                  <Usb className="w-10 h-10 text-gray-500" />
+                  <Wifi className="w-10 h-10 text-gray-500" />
                 </div>
                 <p className="text-gray-400 text-lg mb-2">Keine Geräte verbunden</p>
                 <p className="text-gray-500 text-sm mb-4">
-                  {webUSBSupported 
-                    ? 'Klicken Sie auf "Gerät verbinden" und schließen Sie ein USB-C Gerät an'
-                    : 'Wechseln Sie zu einem unterstützten Browser, um USB-Geräte zu erkennen'
-                  }
+                  Klicke auf "QR-Code anzeigen" und scanne ihn mit deinem anderen Gerät
                 </p>
               </div>
-            ) : (
+            ) : connectedDevices.length > 0 && (
               <div className="space-y-4">
                 {connectedDevices.map((device, index) => {
                   const currentCPU = individualDeviceCPU[device.id] || device.cpu
@@ -564,17 +546,11 @@ const Dashboard = () => {
                               <div className="font-semibold text-white flex items-center gap-2">
                                 {device.name}
                                 <Badge variant="outline" className="text-xs">
-                                  Gerät #{index + 1}
+                                  {device.os}
                                 </Badge>
                               </div>
                               <div className="text-sm text-gray-400">
-                                {device.model}
-                                {device.vendorId && device.productId && (
-                                  <span className="ml-2 text-xs">
-                                    (VID: {device.vendorId.toString(16).toUpperCase()}, 
-                                     PID: {device.productId.toString(16).toUpperCase()})
-                                  </span>
-                                )}
+                                {device.model} • {device.type}
                               </div>
                             </div>
                           </div>

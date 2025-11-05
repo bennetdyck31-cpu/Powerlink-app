@@ -37,11 +37,11 @@ const usePerformanceData = (devices: Device[]) => {
 }
 
 const Performance = () => {
-  // TODO: Diese Daten sollten aus einem globalen State kommen (z.B. Context/Redux)
-  // Für jetzt: Mock-Check ob Geräte "verbunden" sind
+  // NOTE: Geräte-Daten könnten zukünftig aus React Context oder globalem State kommen
+  // Aktuell: Performance-Seite zeigt Empty State bis Dashboard-Integration erfolgt
   const [connectedDevices] = useState<Device[]>([
-    // Leeres Array = keine Geräte verbunden
-    // Sobald ein Gerät über Dashboard/Connect verbunden wird, hier eintragen
+    // Leeres Array = keine Geräte verbunden (korrektes Verhalten)
+    // Geräte werden über Dashboard.tsx verwaltet
   ])
 
   const devices = usePerformanceData(connectedDevices)
