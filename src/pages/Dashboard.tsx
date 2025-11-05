@@ -44,35 +44,58 @@ const Dashboard = () => {
   // Berechne Verbindungsstatus basierend auf tatsächlich verbundenen Geräten
   const isConnected = connectedDevices.length > 0
 
-  // Echtzeit CPU-Verbrauch messen
+  // Echtzeit CPU-Verbrauch messen (so akkurat wie im Browser möglich)
   useEffect(() => {
-    let frameCount = 0
-    let lastTime = performance.now()
+    let animationFrameId: number
+    let lastFrameTime = performance.now()
+    let frameDelays: number[] = []
     
-    const measureCPU = () => {
-      const currentTime = performance.now()
-      const deltaTime = currentTime - lastTime
+    const measureCPU = (currentTime: number) => {
+      const frameDelta = currentTime - lastFrameTime
+      lastFrameTime = currentTime
       
-      if (deltaTime >= 1000) {
-        // Simuliere CPU-Last basierend auf FPS
-        // In einem echten Szenario würde man hier komplexere Messungen durchführen
-        const fps = (frameCount / deltaTime) * 1000
-        const usage = Math.min(100, Math.max(0, 100 - (fps / 60 * 100)))
+      // Sammle Frame-Delays (sollte ~16.67ms bei 60fps sein)
+      frameDelays.push(frameDelta)
+      
+      // Berechne alle 60 Frames (ca. 1 Sekunde)
+      if (frameDelays.length >= 60) {
+        // Durchschnittliche Frame-Zeit
+        const avgFrameTime = frameDelays.reduce((a, b) => a + b, 0) / frameDelays.length
         
-        // Füge etwas Variation hinzu für realistische Werte
-        const variance = Math.random() * 10 - 5
-        setCpuUsage(Math.round(Math.max(15, Math.min(85, 35 + variance))))
+        // Erwartete Frame-Zeit bei 60fps
+        const expectedFrameTime = 1000 / 60 // ~16.67ms
         
-        frameCount = 0
-        lastTime = currentTime
+        // Je langsamer die Frames, desto höher die CPU-Last
+        // Bei 60fps (16.67ms) = niedrige Last
+        // Bei 30fps (33.33ms) = hohe Last
+        const slowdownFactor = avgFrameTime / expectedFrameTime
+        
+        // Konvertiere zu CPU-Prozent (1.0 = 0%, 2.0 = 50%, 4.0 = 100%)
+        let cpuPercent = Math.min(100, (slowdownFactor - 1) * 100)
+        
+        // Füge Speicher-Druck hinzu, falls verfügbar
+        if ((performance as any).memory) {
+          const memory = (performance as any).memory
+          const usedMemoryPercent = (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100
+          // Speicher-Druck erhöht CPU-Anzeige leicht
+          cpuPercent += usedMemoryPercent * 0.1
+        }
+        
+        // Baseline: Mindestens 15% (System läuft immer etwas)
+        cpuPercent = Math.max(15, Math.min(100, cpuPercent + 15))
+        
+        setCpuUsage(Math.round(cpuPercent))
+        frameDelays = []
       }
       
-      frameCount++
-      requestAnimationFrame(measureCPU)
+      animationFrameId = requestAnimationFrame(measureCPU)
     }
     
-    const animationId = requestAnimationFrame(measureCPU)
-    return () => cancelAnimationFrame(animationId)
+    animationFrameId = requestAnimationFrame(measureCPU)
+    
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId)
+    }
   }, [])
 
   // Berechne Leistungs-Boost basierend auf verbundenen Geräten
