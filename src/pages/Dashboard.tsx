@@ -40,6 +40,7 @@ const Dashboard = () => {
   const [webUSBSupported, setWebUSBSupported] = useState(false)
   const [scanningForDevices, setScanningForDevices] = useState(false)
   const [cpuUsage, setCpuUsage] = useState(0)
+  const [deviceCpuUsage, setDeviceCpuUsage] = useState(0)
 
   // Berechne Verbindungsstatus basierend auf tatsächlich verbundenen Geräten
   const isConnected = connectedDevices.length > 0
@@ -97,6 +98,33 @@ const Dashboard = () => {
       if (animationFrameId) cancelAnimationFrame(animationFrameId)
     }
   }, [])
+
+  // Simuliere CPU-Auslastung des angeschlossenen Geräts
+  useEffect(() => {
+    if (!isConnected || connectedDevices.length === 0) {
+      setDeviceCpuUsage(0)
+      return
+    }
+
+    // Simuliere realistische CPU-Last des verbundenen Geräts
+    // Basierend auf Gerätetyp (phone = weniger Kerne, laptop = mehr Kerne)
+    const updateDeviceCPU = () => {
+      const device = connectedDevices[0] // Erstes Gerät
+      const baseCPU = device.cpu || 50 // Aus der USBDeviceInfo
+      
+      // Füge realistische Schwankungen hinzu (±10%)
+      const variation = (Math.random() - 0.5) * 20
+      const deviceCPU = Math.max(20, Math.min(90, baseCPU + variation))
+      
+      setDeviceCpuUsage(Math.round(deviceCPU))
+    }
+
+    // Initial + alle 3 Sekunden aktualisieren
+    updateDeviceCPU()
+    const interval = setInterval(updateDeviceCPU, 3000)
+
+    return () => clearInterval(interval)
+  }, [isConnected, connectedDevices])
 
   // Berechne Leistungs-Boost basierend auf verbundenen Geräten
   const calculateBoost = () => {
@@ -256,12 +284,20 @@ const Dashboard = () => {
           bgGradient: 'from-purple-500/20 to-pink-500/20'
         },
         { 
-          label: 'CPU Auslastung', 
+          label: 'CPU Auslastung (PC)', 
           value: `${cpuUsage}%`, 
           icon: Gauge, 
           color: 'text-cyan-400',
           bgGradient: 'from-cyan-500/20 to-blue-500/20',
           progress: cpuUsage
+        },
+        { 
+          label: 'CPU Auslastung (Gerät)', 
+          value: `${deviceCpuUsage}%`, 
+          icon: Smartphone, 
+          color: 'text-orange-400',
+          bgGradient: 'from-orange-500/20 to-red-500/20',
+          progress: deviceCpuUsage
         }
       ]
     : [
@@ -370,7 +406,7 @@ const Dashboard = () => {
             Benchmark starten
           </Button>
 
-          <div className={`grid gap-6 w-full max-w-6xl mb-16 ${isConnected ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+          <div className={`grid gap-6 w-full max-w-6xl mb-16 ${isConnected ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'}`}>
             {stats.map((stat, idx) => (
               <motion.div
                 key={stat.label}
