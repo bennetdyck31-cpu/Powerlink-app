@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Cable, Home, Link as LinkIcon, TrendingUp, Settings, Moon, Sun } from 'lucide-react'
 import { Button } from './ui/button'
@@ -12,6 +12,15 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation()
   const [isDark, setIsDark] = useState(true)
 
+  // Apply dark mode class to <html> element
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [isDark])
+
   const navItems = [
     { path: '/', label: 'Dashboard', icon: Home },
     { path: '/connect', label: 'Connect', icon: LinkIcon },
@@ -22,9 +31,9 @@ const Layout = ({ children }: LayoutProps) => {
   const isActive = (path: string) => location.pathname === path
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-purple-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-purple-900 dark:from-gray-100 dark:to-blue-100 transition-colors">
       {/* Header - Desktop */}
-      <header className="sticky top-0 z-50 bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
+      <header className="sticky top-0 z-50 bg-gray-800/80 dark:bg-white/80 backdrop-blur-sm border-b border-gray-700 dark:border-gray-200">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -42,7 +51,7 @@ const Layout = ({ children }: LayoutProps) => {
               <Link key={item.path} to={item.path}>
                 <Button
                   variant={isActive(item.path) ? 'default' : 'ghost'}
-                  className={isActive(item.path) ? 'bg-cyan-500 hover:bg-cyan-600' : ''}
+                  className={isActive(item.path) ? 'bg-cyan-500 hover:bg-cyan-600' : 'dark:text-gray-800 dark:hover:bg-gray-100'}
                 >
                   <item.icon className="w-4 h-4 mr-2" />
                   {item.label}
@@ -56,7 +65,7 @@ const Layout = ({ children }: LayoutProps) => {
             variant="ghost"
             size="icon"
             onClick={() => setIsDark(!isDark)}
-            className="hidden md:flex"
+            className="hidden md:flex dark:text-gray-800 dark:hover:bg-gray-100"
           >
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </Button>
@@ -67,15 +76,15 @@ const Layout = ({ children }: LayoutProps) => {
       <main>{children}</main>
 
       {/* Bottom Navigation - Mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-800/95 backdrop-blur-sm border-t border-gray-700 z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-800/95 dark:bg-white/95 backdrop-blur-sm border-t border-gray-700 dark:border-gray-200 z-50">
         <div className="flex justify-around items-center h-16 px-2">
           {navItems.map((item) => (
             <Link key={item.path} to={item.path} className="flex-1">
               <div
                 className={`flex flex-col items-center justify-center gap-1 py-2 rounded-lg transition-colors ${
                   isActive(item.path)
-                    ? 'text-cyan-400'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'text-cyan-400 dark:text-cyan-600'
+                    : 'text-gray-400 dark:text-gray-600 hover:text-white dark:hover:text-gray-900'
                 }`}
               >
                 <item.icon className="w-5 h-5" />
@@ -87,8 +96,8 @@ const Layout = ({ children }: LayoutProps) => {
       </nav>
 
       {/* Footer */}
-      <footer className="bg-gray-800/50 border-t border-gray-700 py-6 mb-16 md:mb-0">
-        <div className="container mx-auto px-4 text-center text-gray-400 text-sm">
+      <footer className="bg-gray-800/50 dark:bg-white/50 border-t border-gray-700 dark:border-gray-200 py-6 mb-16 md:mb-0">
+        <div className="container mx-auto px-4 text-center text-gray-400 dark:text-gray-600 text-sm">
           © 2025 PowerLink. Made with ⚡
         </div>
       </footer>
