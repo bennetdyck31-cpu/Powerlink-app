@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Cable, Smartphone, Laptop, Loader2, Cpu, HardDrive, Battery, WifiOff, Tablet } from 'lucide-react'
+import { Cable, Smartphone, Laptop, Loader2, Cpu, HardDrive, WifiOff, Tablet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -12,7 +12,6 @@ interface DeviceInfo {
   type: 'phone' | 'tablet' | 'laptop' | 'desktop'
   cpu: string
   ram: string
-  battery: number
   connection: string
   os: string
 }
@@ -26,23 +25,20 @@ const detectDevice = async (): Promise<DeviceInfo> => {
   const cpuCores = navigator.hardwareConcurrency || 4
   const deviceMemory = (navigator as any).deviceMemory || 8 // GB
   
-  // Batteriestatus (falls verfügbar)
-  let batteryLevel = 0
+  // Ladestatus prüfen (USB-C oder WiFi)
   let batteryCharging = false
   
   try {
     if ('getBattery' in navigator) {
       const battery = await (navigator as any).getBattery()
-      batteryLevel = Math.round(battery.level * 100)
       batteryCharging = battery.charging
     }
   } catch (e) {
     // Fallback wenn Battery API nicht verfügbar
-    batteryLevel = 100
+    batteryCharging = false
   }
   
   // iOS/iPadOS Erkennung
-  const isIOS = /iPad|iPhone|iPod/.test(ua)
   const isIPadOS = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1
   
   // Detaillierte Geräteerkennung
@@ -55,7 +51,6 @@ const detectDevice = async (): Promise<DeviceInfo> => {
       type: 'tablet',
       cpu: `${cpuCores} Kerne`,
       ram: `${deviceMemory} GB`,
-      battery: batteryLevel || 95,
       connection: batteryCharging ? 'USB-C (lädt)' : 'WiFi',
       os: 'iPadOS ' + (ua.match(/OS (\d+)_/)?.[1] || '17')
     }
@@ -68,7 +63,6 @@ const detectDevice = async (): Promise<DeviceInfo> => {
       type: 'phone',
       cpu: `${cpuCores} Kerne`,
       ram: `${deviceMemory} GB`,
-      battery: batteryLevel || 85,
       connection: batteryCharging ? 'USB-C (lädt)' : 'WiFi',
       os: 'iOS ' + (ua.match(/OS (\d+)_/)?.[1] || '17')
     }
@@ -82,7 +76,6 @@ const detectDevice = async (): Promise<DeviceInfo> => {
       type: isTablet ? 'tablet' : 'phone',
       cpu: `${cpuCores} Kerne`,
       ram: `${deviceMemory} GB`,
-      battery: batteryLevel || 75,
       connection: batteryCharging ? 'USB-C (lädt)' : 'WiFi',
       os: 'Android ' + (ua.match(/Android (\d+)/)?.[1] || '14')
     }
@@ -94,7 +87,6 @@ const detectDevice = async (): Promise<DeviceInfo> => {
       type: 'laptop',
       cpu: `${cpuCores} Kerne`,
       ram: `${deviceMemory} GB`,
-      battery: batteryLevel || 90,
       connection: batteryCharging ? 'USB-C (lädt)' : 'Thunderbolt',
       os: 'macOS'
     }
@@ -106,7 +98,6 @@ const detectDevice = async (): Promise<DeviceInfo> => {
       type: 'laptop',
       cpu: `${cpuCores} Kerne`,
       ram: `${deviceMemory} GB`,
-      battery: batteryLevel || 100,
       connection: batteryCharging ? 'USB-C (lädt)' : 'USB-C',
       os: 'Windows 11'
     }
@@ -119,7 +110,6 @@ const detectDevice = async (): Promise<DeviceInfo> => {
     type: 'laptop',
     cpu: `${cpuCores} Kerne`,
     ram: `${deviceMemory} GB`,
-    battery: batteryLevel || 0,
     connection: 'USB',
     os: 'Unbekannt'
   }
@@ -253,7 +243,7 @@ const Connect = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="text-center p-4 bg-gray-800 rounded-lg">
                       <Cpu className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
                       <div className="text-sm text-gray-400">CPU</div>
@@ -264,19 +254,6 @@ const Connect = () => {
                       <div className="text-sm text-gray-400">RAM</div>
                       <div className="text-lg font-bold">{deviceInfo.ram}</div>
                     </div>
-                    <div className="text-center p-4 bg-gray-800 rounded-lg">
-                      <Battery className="w-6 h-6 text-green-400 mx-auto mb-2" />
-                      <div className="text-sm text-gray-400">Battery</div>
-                      <div className="text-lg font-bold">{deviceInfo.battery}%</div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-gray-400">Batteriestatus</span>
-                      <span className="text-green-400">{deviceInfo.battery}%</span>
-                    </div>
-                    <Progress value={deviceInfo.battery} indicatorClassName="bg-green-400" />
                   </div>
                 </Card>
 
