@@ -66,8 +66,8 @@ const Layout = ({ children }: LayoutProps) => {
               <div
                 className={`flex flex-col items-center justify-center gap-1 py-2 rounded-lg transition-colors ${
                   isActive(item.path)
-                    ? 'text-cyan-400 dark:text-cyan-600'
-                    : 'text-gray-400 dark:text-gray-600 hover:text-white dark:hover:text-gray-900'
+                    ? 'text-cyan-400'
+                    : 'text-gray-400 hover:text-white'
                 }`}
               >
                 <item.icon className="w-5 h-5" />

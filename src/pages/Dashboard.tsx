@@ -455,15 +455,15 @@ const Dashboard = () => {
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white p-6 rounded-lg mb-6 flex flex-col items-center"
+                className="bg-gray-800 border border-gray-700 p-6 rounded-lg mb-6 flex flex-col items-center"
               >
-                <h3 className="text-xl font-bold text-gray-800 mb-4">
+                <h3 className="text-xl font-bold text-white mb-4">
                   📱 Scanne diesen QR-Code mit dem anderen Gerät
                 </h3>
                 
                 {/* Connection Type Info */}
-                <div className="mb-4 p-3 bg-gray-100 rounded-lg">
-                  <p className="text-sm text-gray-700 font-semibold mb-2">
+                <div className="mb-4 p-3 bg-gray-900/50 border border-gray-700 rounded-lg">
+                  <p className="text-sm text-gray-200 font-semibold mb-2">
                     {connectionType === 'usb-tethering' && (
                       <>🔌 USB-Tethering erkannt - Offline-Verbindung aktiv!</>
                     )}
@@ -475,13 +475,13 @@ const Dashboard = () => {
                     )}
                   </p>
                   {localIP && (
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-400">
                       Lokale IP: {localIP}
                       {connectionType === 'usb-tethering' && ' (USB-Netzwerk)'}
                     </p>
                   )}
                   {connectionType === 'usb-tethering' && (
-                    <p className="text-xs text-green-700 mt-1 font-medium">
+                    <p className="text-xs text-green-400 mt-1 font-medium">
                       ✅ Beste Performance - Kabelgebunden & Offline
                     </p>
                   )}
@@ -495,7 +495,7 @@ const Dashboard = () => {
                     includeMargin={true}
                   />
                 </div>
-                <p className="text-gray-600 mt-4 text-center max-w-md">
+                <p className="text-gray-400 mt-4 text-center max-w-md">
                   Öffne die PowerLink App auf deinem anderen Gerät und scanne diesen Code, 
                   um eine sichere Verbindung herzustellen.
                 </p>
