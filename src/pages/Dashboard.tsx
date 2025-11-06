@@ -452,77 +452,95 @@ const Dashboard = () => {
             </div>
             
             {showQRCode && myPeerId && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-gray-800 border border-gray-700 p-6 rounded-lg mb-6 flex flex-col items-center"
-              >
-                <h3 className="text-xl font-bold text-white mb-4">
-                  📱 Scanne diesen QR-Code mit dem anderen Gerät
-                </h3>
-                
-                {/* Connection Type Info */}
-                <div className="mb-4 p-3 bg-gray-900/50 border border-gray-700 rounded-lg">
-                  <p className="text-sm text-gray-200 font-semibold mb-2">
-                    {connectionType === 'usb-tethering' && (
-                      <>🔌 USB-Tethering erkannt - Offline-Verbindung aktiv!</>
-                    )}
-                    {connectionType === 'local-wifi' && (
-                      <>📡 Lokales WiFi - Keine Internet-Verbindung nötig</>
-                    )}
-                    {connectionType === 'internet' && (
-                      <>🌐 Internet-Verbindung - Funktioniert überall</>
-                    )}
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                {/* QR-Code Karte */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="bg-gray-800 border border-gray-700 p-6 rounded-lg flex flex-col items-center"
+                >
+                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <QrCode className="w-6 h-6" />
+                    QR-Code scannen
+                  </h3>
+                  
+                  <div className="bg-white p-4 rounded-lg shadow-lg">
+                    <QRCodeSVG 
+                      value={`https://supafer.netlify.app/connect?peer=${myPeerId}`}
+                      size={200}
+                      level="H"
+                      includeMargin={true}
+                    />
+                  </div>
+                  
+                  <p className="text-gray-400 mt-4 text-center text-sm">
+                    Scanne mit deinem anderen Gerät
                   </p>
-                  {localIP && (
-                    <p className="text-xs text-gray-400">
-                      Lokale IP: {localIP}
-                      {connectionType === 'usb-tethering' && ' (USB-Netzwerk)'}
-                    </p>
-                  )}
-                  {connectionType === 'usb-tethering' && (
-                    <p className="text-xs text-green-400 mt-1 font-medium">
-                      ✅ Beste Performance - Kabelgebunden & Offline
-                    </p>
-                  )}
-                </div>
+                  
+                  <div className="mt-4 p-3 bg-gray-900/50 rounded text-center w-full">
+                    <p className="text-xs text-gray-500 mb-1">Oder verwende diesen Link:</p>
+                    <code className="text-xs text-cyan-400 break-all">
+                      https://supafer.netlify.app/connect?peer={myPeerId}
+                    </code>
+                  </div>
+                </motion.div>
 
-                <div className="bg-white p-4 rounded-lg shadow-lg">
-                  <QRCodeSVG 
-                    value={`https://supafer.netlify.app/connect?peer=${myPeerId}`}
-                    size={256}
-                    level="H"
-                    includeMargin={true}
-                  />
-                </div>
-                <p className="text-gray-400 mt-4 text-center max-w-md">
-                  Öffne die PowerLink App auf deinem anderen Gerät und scanne diesen Code, 
-                  um eine sichere Verbindung herzustellen.
-                </p>
-                
-                {/* Kabel-Verbindung Option */}
-                <div className="mt-6 p-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
-                  <h4 className="text-md font-bold text-gray-800 mb-2 flex items-center gap-2">
-                    <Usb className="w-5 h-5" />
-                    Alternative: Per USB-Kabel verbinden
-                  </h4>
-                  <ol className="text-sm text-gray-700 space-y-2 mb-3">
-                    <li>1️⃣ Verbinde dein Gerät per USB-Kabel</li>
-                    <li>2️⃣ Aktiviere USB-Tethering (iPhone: Persönlicher Hotspot, Android: USB-Tethering)</li>
-                    <li>3️⃣ Öffne den Link oben auf dem anderen Gerät</li>
-                  </ol>
-                  <p className="text-xs text-green-700 font-semibold">
-                    ⚡ Schnellste Verbindung - Funktioniert offline!
-                  </p>
-                </div>
-                
-                <div className="mt-4 p-3 bg-gray-100 rounded text-center">
-                  <p className="text-xs text-gray-500 mb-1">Oder verwende diesen Link:</p>
-                  <code className="text-xs text-cyan-600 break-all">
-                    https://supafer.netlify.app/connect?peer={myPeerId}
-                  </code>
-                </div>
-              </motion.div>
+                {/* USB-Kabel Karte */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-gradient-to-br from-green-900/30 to-cyan-900/30 border-2 border-green-500/50 p-6 rounded-lg"
+                >
+                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <Usb className="w-6 h-6 text-green-400" />
+                    Per USB-Kabel verbinden
+                  </h3>
+                  
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                        <span className="text-green-400 font-bold">1</span>
+                      </div>
+                      <p className="text-gray-300 text-sm pt-1">
+                        Verbinde dein Gerät per <strong>USB-Kabel</strong> mit dem Computer
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                        <span className="text-green-400 font-bold">2</span>
+                      </div>
+                      <div className="text-gray-300 text-sm pt-1">
+                        <p className="mb-1">Aktiviere <strong>USB-Tethering:</strong></p>
+                        <ul className="text-xs text-gray-400 space-y-1 ml-4">
+                          <li>• <strong>iPhone:</strong> Einstellungen → Persönlicher Hotspot</li>
+                          <li>• <strong>Android:</strong> Einstellungen → Netzwerk → USB-Tethering</li>
+                        </ul>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                        <span className="text-green-400 font-bold">3</span>
+                      </div>
+                      <p className="text-gray-300 text-sm pt-1">
+                        Öffne den Link oben auf dem <strong>anderen Gerät</strong>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                    <p className="text-green-400 font-semibold text-sm flex items-center gap-2">
+                      <Zap className="w-4 h-4" />
+                      Schnellste Verbindung - Funktioniert offline!
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Bis zu 480 Mbps Übertragungsrate
+                    </p>
+                  </div>
+                </motion.div>
+              </div>
             )}
             
             {connecting && (
