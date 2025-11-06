@@ -43,8 +43,12 @@ const Layout = ({ children }: LayoutProps) => {
             {navItems.map((item) => (
               <Link key={item.path} to={item.path}>
                 <Button
-                  variant={isActive(item.path) ? 'default' : 'ghost'}
-                  className={isActive(item.path) ? 'bg-blue-500 hover:bg-blue-600' : ''}
+                  variant={isActive(item.path) ? 'default' : 'outline'}
+                  className={
+                    isActive(item.path) 
+                      ? 'bg-gradient-to-r from-pink-500 to-violet-500 hover:from-pink-600 hover:to-violet-600 border-0 text-white font-semibold' 
+                      : 'border-pink-500/50 text-pink-300 hover:bg-pink-500/20 hover:text-pink-200 hover:border-pink-400'
+                  }
                 >
                   <item.icon className="w-4 h-4 mr-2" />
                   {item.label}
@@ -59,15 +63,15 @@ const Layout = ({ children }: LayoutProps) => {
       <main>{children}</main>
 
       {/* Bottom Navigation - Mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-800/95 backdrop-blur-sm border-t border-gray-700 z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-sm border-t border-pink-500/30 z-50">
         <div className="flex justify-around items-center h-16 px-2">
           {navItems.map((item) => (
             <Link key={item.path} to={item.path} className="flex-1">
               <div
-                className={`flex flex-col items-center justify-center gap-1 py-2 rounded-lg transition-colors ${
+                className={`flex flex-col items-center justify-center gap-1 py-2 rounded-lg transition-all ${
                   isActive(item.path)
-                    ? 'text-blue-400'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'text-pink-400 bg-pink-500/20'
+                    : 'text-gray-300 hover:text-pink-300 hover:bg-pink-500/10'
                 }`}
               >
                 <item.icon className="w-5 h-5" />

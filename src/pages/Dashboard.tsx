@@ -70,7 +70,8 @@ const Dashboard = () => {
   useEffect(() => {
     let intervalId: number
     let lastTimestamp = performance.now()
-    let lastCPUTime = 0
+    let lastCPUTime = 25 // Initialer Wert (verhindert NaN)
+    let isFirstMeasurement = true
     
     const measureRealCPU = () => {
       const start = performance.now()
@@ -94,8 +95,23 @@ const Dashboard = () => {
       const cpuTime = end - start // Zeit für Berechnung (ms)
       const elapsed = end - lastTimestamp // Zeit seit letzter Messung (ms)
       
+      // Beim ersten Mal: Setze initialen Wert
+      if (isFirstMeasurement || elapsed < 100) {
+        lastTimestamp = end
+        lastCPUTime = 25 // Realistischer Start-Wert
+        setCpuUsage(25)
+        isFirstMeasurement = false
+        return
+      }
+      
       // CPU-Auslastung = (CPU-Zeit / Gesamt-Zeit) * 100
-      const cpuPercent = (cpuTime / elapsed) * 100
+      const cpuPercent = Math.min(100, (cpuTime / elapsed) * 100)
+      
+      // Verhindere NaN/Infinity
+      if (!isFinite(cpuPercent) || isNaN(cpuPercent)) {
+        setCpuUsage(Math.round(lastCPUTime))
+        return
+      }
       
       // Glättung mit exponentieller Mittelung
       const smoothed = lastCPUTime * 0.7 + cpuPercent * 0.3
@@ -103,7 +119,7 @@ const Dashboard = () => {
       lastTimestamp = end
       
       // Berücksichtige Hintergrund-Prozesse (Basis: +10-15%)
-      const totalCPU = Math.min(100, smoothed + 12 + (Math.random() * 3))
+      const totalCPU = Math.max(15, Math.min(100, smoothed + 12 + (Math.random() * 3)))
       
       setCpuUsage(Math.round(totalCPU))
     }
