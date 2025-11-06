@@ -31,16 +31,40 @@ const ConnectScan = () => {
       console.log('🔄 Verbinde zu Peer:', peerId)
       await webrtcManager.connectToHost(peerId)
       
-      // Warte kurz auf Verbindungsbestätigung
-      setTimeout(() => {
-        setConnecting(false)
-        setConnected(true)
+      console.log('✅ WebRTC Manager verbunden')
+      
+      // Warte auf tatsächliche Peer-Verbindung (nicht nur Peer-Initialisierung)
+      let connectionEstablished = false
+      let attempts = 0
+      const maxAttempts = 20 // 10 Sekunden max
+      
+      const checkConnection = () => {
+        attempts++
+        const devices = webrtcManager.getConnectedDevices()
+        console.log(`🔍 Verbindungs-Check ${attempts}/20:`, devices)
         
-        // Nach 2 Sekunden zum Dashboard
-        setTimeout(() => {
-          navigate('/dashboard')
-        }, 2000)
-      }, 1500)
+        if (devices.length > 0) {
+          connectionEstablished = true
+          console.log('✅ Verbindung bestätigt:', devices)
+          setConnecting(false)
+          setConnected(true)
+          
+          // Nach 1.5 Sekunden zum Dashboard
+          setTimeout(() => {
+            navigate('/dashboard')
+          }, 1500)
+        } else if (attempts < maxAttempts) {
+          setTimeout(checkConnection, 500)
+        } else {
+          console.log('⚠️ Timeout - Verbindung dauert zu lange')
+          setError('Verbindung dauert zu lange. Bitte erneut versuchen.')
+          setConnecting(false)
+        }
+      }
+      
+      // Starte Connection-Check nach 1 Sekunde
+      setTimeout(checkConnection, 1000)
+      
     } catch (err: any) {
       console.error('❌ Verbindungsfehler:', err)
       setError(err.message || 'Verbindung fehlgeschlagen')

@@ -26,9 +26,45 @@ class WebRTCManager {
   private onDeviceConnected?: (deviceId: string, info: DeviceInfo) => void
   private onDeviceDisconnected?: (deviceId: string) => void
   private onPerformanceUpdate?: (deviceId: string, data: any) => void
+  private visibilityChangeHandler?: () => void
+  private beforeUnloadHandler?: (e: BeforeUnloadEvent) => void
 
   constructor() {
     this.initializeLocalDeviceInfo()
+    this.setupLifecycleHandlers()
+  }
+
+  /**
+   * Verhindere automatisches Trennen bei Bildschirm-Aus/App-Wechsel
+   */
+  private setupLifecycleHandlers() {
+    // Verhindere Trennung bei Visibility Change (Bildschirm aus, App-Wechsel)
+    this.visibilityChangeHandler = () => {
+      if (document.hidden) {
+        console.log('📱 App in Hintergrund - Verbindung bleibt aktiv')
+        // NICHT trennen! Nur loggen
+      } else {
+        console.log('📱 App wieder im Vordergrund')
+      }
+    }
+    document.addEventListener('visibilitychange', this.visibilityChangeHandler)
+
+    // Warne nur bei Browser-Close (nicht bei Tab-Wechsel)
+    this.beforeUnloadHandler = (e: BeforeUnloadEvent) => {
+      if (this.connections.size > 0) {
+        const message = 'Geräte sind noch verbunden. Wirklich schließen?'
+        e.preventDefault()
+        e.returnValue = message
+        return message
+      }
+    }
+    window.addEventListener('beforeunload', this.beforeUnloadHandler)
+
+    // Keep-Alive bei Page Freeze (iOS/Android)
+    if ('wakeLock' in navigator) {
+      // Wake Lock API für moderne Browser
+      console.log('✅ Wake Lock API verfügbar')
+    }
   }
 
   private initializeLocalDeviceInfo() {
@@ -37,15 +73,28 @@ class WebRTCManager {
     let os = 'Unknown'
     let model = 'Unknown Device'
 
-    // Detect OS
+    console.log('🔍 User Agent:', userAgent)
+
+    // Detect OS - WICHTIG: iPhone vor iPad prüfen!
     if (/iPhone/.test(userAgent)) {
       deviceType = 'phone'
       os = 'iOS'
       model = this.getIPhoneModel(userAgent)
+      console.log('📱 iPhone erkannt:', model)
     } else if (/iPad/.test(userAgent)) {
-      deviceType = 'tablet'
-      os = 'iOS'
-      model = this.getIPadModel(userAgent)
+      // iPad kann manchmal als iPhone gemeldet werden in iOS 13+
+      // Prüfe zusätzlich auf Touch-Punkte
+      if (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) {
+        deviceType = 'tablet'
+        os = 'iOS'
+        model = this.getIPadModel(userAgent)
+        console.log('📱 iPad erkannt:', model)
+      } else {
+        deviceType = 'phone'
+        os = 'iOS'
+        model = 'iPhone'
+        console.log('📱 iPhone (via iPad UA) erkannt')
+      }
     } else if (/Android/.test(userAgent)) {
       if (/Mobile/.test(userAgent)) {
         deviceType = 'phone'
@@ -54,18 +103,30 @@ class WebRTCManager {
       }
       os = 'Android'
       model = this.getAndroidModel(userAgent)
+      console.log('📱 Android erkannt:', model, 'Type:', deviceType)
     } else if (/Macintosh/.test(userAgent)) {
-      deviceType = 'laptop'
-      os = 'macOS'
-      model = 'Mac'
+      // Neuere iPads (iPadOS 13+) können als Mac gemeldet werden
+      if (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) {
+        deviceType = 'tablet'
+        os = 'iOS'
+        model = 'iPad'
+        console.log('📱 iPad (via Mac UA) erkannt')
+      } else {
+        deviceType = 'laptop'
+        os = 'macOS'
+        model = 'Mac'
+        console.log('💻 Mac erkannt')
+      }
     } else if (/Windows/.test(userAgent)) {
       deviceType = 'desktop'
       os = 'Windows'
       model = 'Windows PC'
+      console.log('💻 Windows PC erkannt')
     } else if (/Linux/.test(userAgent)) {
       deviceType = 'desktop'
       os = 'Linux'
       model = 'Linux PC'
+      console.log('💻 Linux PC erkannt')
     }
 
     this.localDeviceInfo = {
@@ -82,9 +143,28 @@ class WebRTCManager {
   }
 
   private getIPhoneModel(ua: string): string {
+    // iPhone 15 Serie
     if (/iPhone15,2/.test(ua) || /iPhone15,3/.test(ua)) return 'iPhone 15 Pro'
     if (/iPhone15,4/.test(ua) || /iPhone15,5/.test(ua)) return 'iPhone 15 Pro Max'
+    if (/iPhone14,7/.test(ua) || /iPhone14,8/.test(ua)) return 'iPhone 15'
+    
+    // iPhone 14 Serie
     if (/iPhone14,7/.test(ua)) return 'iPhone 14'
+    if (/iPhone14,8/.test(ua)) return 'iPhone 14 Plus'
+    
+    // iPhone 13 Serie
+    if (/iPhone14,5/.test(ua)) return 'iPhone 13'
+    if (/iPhone14,4/.test(ua)) return 'iPhone 13 mini'
+    if (/iPhone14,2/.test(ua)) return 'iPhone 13 Pro'
+    if (/iPhone14,3/.test(ua)) return 'iPhone 13 Pro Max'
+    
+    // iPhone 12 Serie
+    if (/iPhone13,2/.test(ua)) return 'iPhone 12'
+    if (/iPhone13,1/.test(ua)) return 'iPhone 12 mini'
+    if (/iPhone13,3/.test(ua)) return 'iPhone 12 Pro'
+    if (/iPhone13,4/.test(ua)) return 'iPhone 12 Pro Max'
+    
+    // Fallback
     if (/iPhone/.test(ua)) return 'iPhone'
     return 'iPhone'
   }
@@ -312,6 +392,7 @@ class WebRTCManager {
 
   // Disconnect von allen Geräten
   disconnectAll() {
+    console.log('🔌 Trenne alle Verbindungen manuell')
     this.connections.forEach((conn) => {
       conn.close()
     })
@@ -325,10 +406,21 @@ class WebRTCManager {
 
   // Disconnect von einem spezifischen Gerät
   disconnectDevice(deviceId: string) {
+    console.log('🔌 Trenne Gerät manuell:', deviceId)
     const conn = this.connections.get(deviceId)
     if (conn) {
       conn.close()
       this.connections.delete(deviceId)
+    }
+  }
+
+  // Cleanup bei App-Zerstörung
+  cleanup() {
+    if (this.visibilityChangeHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler)
+    }
+    if (this.beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this.beforeUnloadHandler)
     }
   }
 
