@@ -67,7 +67,7 @@ const Dashboard = () => {
 
   // Echtzeit CPU-Verbrauch messen (so akkurat wie im Browser möglich)
   useEffect(() => {
-    let intervalId: NodeJS.Timeout
+    let intervalId: number
     let measurementCount = 0
     
     const measureCPU = () => {
