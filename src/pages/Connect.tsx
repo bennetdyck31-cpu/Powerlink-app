@@ -174,10 +174,10 @@ const Connect = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-purple-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-indigo-900 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute top-20 -left-40 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"
+          className="absolute top-20 -left-40 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"
           animate={{ x: [0, 100, 0], y: [0, 80, 0] }}
           transition={{ duration: 20, repeat: Infinity }}
         />
@@ -185,10 +185,10 @@ const Connect = () => {
 
       <div className="relative z-10 container mx-auto px-4 py-20">
         <motion.div className="text-center mb-16" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center">
+          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
             <Cable className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent mb-4">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent mb-4">
             Gerät verbinden
           </h1>
           <p className="text-xl text-gray-300 mb-4">
@@ -210,7 +210,7 @@ const Connect = () => {
               <div className="py-12">
                 <div className="flex justify-center mb-6">
                   <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
-                    <Loader2 className="w-16 h-16 text-cyan-400" />
+                    <Loader2 className="w-16 h-16 text-blue-400" />
                   </motion.div>
                 </div>
                 <Progress value={scanProgress} className="h-2 mb-4" />
@@ -224,13 +224,13 @@ const Connect = () => {
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                 <Card className="p-6 bg-gray-700">
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-500/30 to-indigo-500/30 flex items-center justify-center">
                       {deviceInfo.type === 'phone' ? (
-                        <Smartphone className="w-8 h-8 text-purple-400" />
+                        <Smartphone className="w-8 h-8 text-indigo-400" />
                       ) : deviceInfo.type === 'tablet' ? (
                         <Tablet className="w-8 h-8 text-blue-400" />
                       ) : (
-                        <Laptop className="w-8 h-8 text-cyan-400" />
+                        <Laptop className="w-8 h-8 text-blue-400" />
                       )}
                     </div>
                     <div className="flex-1">
@@ -245,12 +245,12 @@ const Connect = () => {
 
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="text-center p-4 bg-gray-800 rounded-lg">
-                      <Cpu className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
+                      <Cpu className="w-6 h-6 text-blue-400 mx-auto mb-2" />
                       <div className="text-sm text-gray-400">CPU</div>
                       <div className="text-lg font-bold">{deviceInfo.cpu}</div>
                     </div>
                     <div className="text-center p-4 bg-gray-800 rounded-lg">
-                      <HardDrive className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+                      <HardDrive className="w-6 h-6 text-indigo-400 mx-auto mb-2" />
                       <div className="text-sm text-gray-400">RAM</div>
                       <div className="text-lg font-bold">{deviceInfo.ram}</div>
                     </div>

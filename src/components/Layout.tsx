@@ -24,16 +24,16 @@ const Layout = ({ children }: LayoutProps) => {
   const isActive = (path: string) => location.pathname === path
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-purple-900 transition-colors">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-indigo-900 transition-colors">
       {/* Header - Desktop */}
       <header className="sticky top-0 z-50 bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
               <Cable className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent hidden md:block">
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent hidden md:block">
               PowerLink
             </span>
           </Link>
@@ -44,7 +44,7 @@ const Layout = ({ children }: LayoutProps) => {
               <Link key={item.path} to={item.path}>
                 <Button
                   variant={isActive(item.path) ? 'default' : 'ghost'}
-                  className={isActive(item.path) ? 'bg-cyan-500 hover:bg-cyan-600' : ''}
+                  className={isActive(item.path) ? 'bg-blue-500 hover:bg-blue-600' : ''}
                 >
                   <item.icon className="w-4 h-4 mr-2" />
                   {item.label}
@@ -66,7 +66,7 @@ const Layout = ({ children }: LayoutProps) => {
               <div
                 className={`flex flex-col items-center justify-center gap-1 py-2 rounded-lg transition-colors ${
                   isActive(item.path)
-                    ? 'text-cyan-400'
+                    ? 'text-blue-400'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >

@@ -16,10 +16,10 @@ const Settings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-purple-900 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-indigo-900 p-6">
       <div className="max-w-4xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
             Settings
           </h1>
 
@@ -27,7 +27,7 @@ const Settings = () => {
             {/* Connection Settings */}
             <Card className="p-6">
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                <SettingsIcon className="w-5 h-5 text-cyan-400" />
+                <SettingsIcon className="w-5 h-5 text-blue-400" />
                 Connection
               </h2>
               <div className="flex items-center justify-between">

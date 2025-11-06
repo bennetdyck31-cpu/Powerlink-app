@@ -10,22 +10,22 @@ const Performance = () => {
 
   // Stats nur anzeigen wenn Geräte verbunden sind
   const stats = hasDevices ? [
-    { label: 'Speedup', value: `${connectedDevices.length}x`, icon: TrendingUp, color: 'text-purple-400', bgGradient: 'from-purple-500/20 to-pink-500/20' },
+    { label: 'Speedup', value: `${connectedDevices.length}x`, icon: TrendingUp, color: 'text-indigo-400', bgGradient: 'from-indigo-500/20 to-violet-500/20' },
     { label: 'Connected Devices', value: `${connectedDevices.length}`, icon: Zap, color: 'text-yellow-400', bgGradient: 'from-yellow-500/20 to-orange-500/20' },
   ] : []
 
   const taskTypes = [
-    { type: 'Video', percent: 40, color: 'bg-purple-500' },
-    { type: 'ML', percent: 30, color: 'bg-pink-500' },
-    { type: 'Image', percent: 20, color: 'bg-cyan-500' },
+    { type: 'Video', percent: 40, color: 'bg-indigo-500' },
+    { type: 'ML', percent: 30, color: 'bg-violet-500' },
+    { type: 'Image', percent: 20, color: 'bg-blue-500' },
     { type: 'Other', percent: 10, color: 'bg-gray-500' },
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-purple-900 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-indigo-900 p-6">
       <div className="max-w-6xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
             Performance
           </h1>
 
@@ -41,7 +41,7 @@ const Performance = () => {
                   Verbinde ein Gerät über den Dashboard oder Connect-Tab,<br />
                   um Performance-Statistiken anzuzeigen.
                 </p>
-                <a href="/" className="inline-block px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg font-semibold hover:opacity-90 transition-opacity">
+                <a href="/" className="inline-block px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg font-semibold hover:opacity-90 transition-opacity">
                   Zum Dashboard
                 </a>
               </div>
@@ -68,13 +68,13 @@ const Performance = () => {
             {connectedDevices.map((device) => (
               <Card key={device.id} className="p-6">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500/30 to-purple-500/30 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500/30 to-indigo-500/30 flex items-center justify-center">
                     {device.type === 'laptop' ? (
-                      <Laptop className="w-6 h-6 text-cyan-400" />
+                      <Laptop className="w-6 h-6 text-blue-400" />
                     ) : device.type === 'tablet' ? (
                       <Tablet className="w-6 h-6 text-blue-400" />
                     ) : (
-                      <Smartphone className="w-6 h-6 text-purple-400" />
+                      <Smartphone className="w-6 h-6 text-indigo-400" />
                     )}
                   </div>
                   <h3 className="text-xl font-bold">{device.name}</h3>
@@ -83,16 +83,16 @@ const Performance = () => {
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-gray-400">CPU</span>
-                      <span className="text-cyan-400">{Math.round(device.cpu)}%</span>
+                      <span className="text-blue-400">{Math.round(device.cpu)}%</span>
                     </div>
-                    <Progress value={device.cpu} indicatorClassName="bg-cyan-400" />
+                    <Progress value={device.cpu} indicatorClassName="bg-blue-400" />
                   </div>
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-gray-400">GPU</span>
-                      <span className="text-purple-400">{Math.round(device.gpu)}%</span>
+                      <span className="text-indigo-400">{Math.round(device.gpu)}%</span>
                     </div>
-                    <Progress value={device.gpu} indicatorClassName="bg-purple-400" />
+                    <Progress value={device.gpu} indicatorClassName="bg-indigo-400" />
                   </div>
                   <div>
                     <div className="flex justify-between text-sm mb-2">

@@ -90,7 +90,7 @@ const ConnectScan = () => {
       >
         <Card className="p-8 bg-gray-800/50 backdrop-blur-sm border-gray-700">
           <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
               {connecting ? (
                 <Loader2 className="w-10 h-10 text-white animate-spin" />
               ) : connected ? (
@@ -124,7 +124,7 @@ const ConnectScan = () => {
                 <>
                   <Button
                     onClick={handleQRScan}
-                    className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
+                    className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
                     size="lg"
                   >
                     <QrCode className="mr-2 h-5 w-5" />
@@ -169,7 +169,7 @@ const ConnectScan = () => {
                     </Button>
                     <Button
                       onClick={handleManualConnect}
-                      className="w-full bg-gradient-to-r from-cyan-500 to-purple-500"
+                      className="w-full bg-gradient-to-r from-blue-500 to-indigo-500"
                     >
                       Peer-ID eingeben
                     </Button>
