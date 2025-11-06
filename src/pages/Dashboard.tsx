@@ -433,6 +433,27 @@ const Dashboard = () => {
                 Connected Devices ({connectedDevices.length}/{MAX_DEVICES})
               </h2>
               <div className="flex flex-col items-end gap-2">
+                {/* CPU Test Button - nur für Debugging */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Intensive CPU-Arbeit für Test
+                    const start = performance.now()
+                    let result = 0
+                    for (let i = 0; i < 10000000; i++) {
+                      result += Math.sqrt(i) * Math.sin(i) * Math.cos(i)
+                    }
+                    const duration = performance.now() - start
+                    console.log(`🔥 CPU-Test: ${duration.toFixed(0)}ms, Result: ${result.toFixed(2)}`)
+                    alert(`CPU-Test abgeschlossen!\nDauer: ${duration.toFixed(0)}ms\n\nDie CPU-Anzeige sollte jetzt steigen.`)
+                  }}
+                  className="text-xs border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
+                >
+                  <Gauge className="mr-1 h-3 w-3" />
+                  CPU-Test
+                </Button>
+                
                 {!showQRCode ? (
                   <Button
                     onClick={startHostMode}
