@@ -2,55 +2,16 @@ import { motion } from 'framer-motion'
 import { TrendingUp, Zap, Cpu, HardDrive, Laptop, Smartphone, Tablet, WifiOff } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { useState, useEffect } from 'react'
-
-interface Device {
-  name: string
-  type: 'laptop' | 'phone' | 'tablet'
-  cpu: number
-  gpu: number
-  ram: number
-}
-
-// Simuliere Echtzeit-Performance-Daten
-const usePerformanceData = (devices: Device[]) => {
-  const [performanceData, setPerformanceData] = useState(devices)
-
-  useEffect(() => {
-    if (devices.length === 0) return
-
-    const interval = setInterval(() => {
-      setPerformanceData(prev =>
-        prev.map(device => ({
-          ...device,
-          cpu: Math.max(10, Math.min(95, device.cpu + (Math.random() - 0.5) * 10)),
-          gpu: Math.max(10, Math.min(95, device.gpu + (Math.random() - 0.5) * 10)),
-          ram: Math.max(20, Math.min(90, device.ram + (Math.random() - 0.5) * 5)),
-        }))
-      )
-    }, 2000)
-
-    return () => clearInterval(interval)
-  }, [devices.length])
-
-  return performanceData
-}
+import { useDevices } from '@/context/DeviceContext'
 
 const Performance = () => {
-  // NOTE: Geräte-Daten könnten zukünftig aus React Context oder globalem State kommen
-  // Aktuell: Performance-Seite zeigt Empty State bis Dashboard-Integration erfolgt
-  const [connectedDevices] = useState<Device[]>([
-    // Leeres Array = keine Geräte verbunden (korrektes Verhalten)
-    // Geräte werden über Dashboard.tsx verwaltet
-  ])
-
-  const devices = usePerformanceData(connectedDevices)
-  const hasDevices = devices.length > 0
+  const { connectedDevices } = useDevices()
+  const hasDevices = connectedDevices.length > 0
 
   // Stats nur anzeigen wenn Geräte verbunden sind
   const stats = hasDevices ? [
-    { label: 'Speedup', value: `${devices.length}x`, icon: TrendingUp, color: 'text-purple-400', bgGradient: 'from-purple-500/20 to-pink-500/20' },
-    { label: 'Cluster Power', value: `${devices.reduce((sum, d) => sum + parseInt(d.name.includes('CPU') ? '8' : '6'), 0)} Cores`, icon: Zap, color: 'text-yellow-400', bgGradient: 'from-yellow-500/20 to-orange-500/20' },
+    { label: 'Speedup', value: `${connectedDevices.length}x`, icon: TrendingUp, color: 'text-purple-400', bgGradient: 'from-purple-500/20 to-pink-500/20' },
+    { label: 'Connected Devices', value: `${connectedDevices.length}`, icon: Zap, color: 'text-yellow-400', bgGradient: 'from-yellow-500/20 to-orange-500/20' },
   ] : []
 
   const taskTypes = [
@@ -104,8 +65,8 @@ const Performance = () => {
 
           {/* Load Charts - nur wenn Geräte verbunden */}
           <div className="grid md:grid-cols-2 gap-6 mb-12">
-            {devices.map((device) => (
-              <Card key={device.name} className="p-6">
+            {connectedDevices.map((device) => (
+              <Card key={device.id} className="p-6">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500/30 to-purple-500/30 flex items-center justify-center">
                     {device.type === 'laptop' ? (
@@ -136,9 +97,9 @@ const Performance = () => {
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-gray-400">RAM</span>
-                      <span className="text-green-400">{Math.round(device.ram)}%</span>
+                      <span className="text-green-400">{Math.round(device.ram)}GB</span>
                     </div>
-                    <Progress value={device.ram} indicatorClassName="bg-green-400" />
+                    <Progress value={(device.ram / 16) * 100} indicatorClassName="bg-green-400" />
                   </div>
                 </div>
               </Card>

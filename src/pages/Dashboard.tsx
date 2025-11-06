@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { webrtcManager, DeviceInfo } from '@/lib/webrtc'
 import { QRCodeSVG } from 'qrcode.react'
 import { connectionManager, ConnectionType } from '@/lib/connection-manager'
+import { useDevices } from '@/context/DeviceContext'
 
 // Technisch optimales Maximum: 4 Geräte
 // Begründung: WebRTC-Bandbreite, CPU-Overhead (~20%), P2P-Sync-Komplexität
@@ -32,7 +33,7 @@ interface ConnectedDevice extends DeviceInfo {
 }
 
 const Dashboard = () => {
-  const [connectedDevices, setConnectedDevices] = useState<ConnectedDevice[]>([])
+  const { connectedDevices, setConnectedDevices } = useDevices()
   const [showQRCode, setShowQRCode] = useState(false)
   const [myPeerId, setMyPeerId] = useState<string | null>(null)
   const [connecting, setConnecting] = useState(false)
@@ -103,7 +104,7 @@ const Dashboard = () => {
     }
   }, [])
 
-  // Multi-Device CPU-Auslastung (aggregiert alle Geräte + individuell)
+  // Multi-Device CPU-Auslastung (nutze echte Werte von Remote-Geräten)
   useEffect(() => {
     if (!isConnected || connectedDevices.length === 0) {
       setDeviceCpuUsage(0)
@@ -111,47 +112,31 @@ const Dashboard = () => {
       return
     }
 
-    // Berechne aggregierte CPU-Last aller verbundenen Geräte + individuelle Werte
+    // Berechne aggregierte CPU-Last aller verbundenen Geräte
     const updateMultiDeviceCPU = () => {
-      // Load-Balancing: Verteile Last gleichmäßig auf alle Geräte
       const totalDevices = connectedDevices.length
       
-      // Jedes Gerät trägt zur Gesamtlast bei
       let totalCPU = 0
       const newIndividualCPU: Record<string, number> = {}
       
       connectedDevices.forEach((device) => {
-        const baseCPU = device.cpu || 50
+        // Nutze ECHTE CPU vom Gerät (nicht simuliert!)
+        const realCPU = device.cpu || 0
         
-        // Load-Balancing-Faktor: Je mehr Geräte, desto niedriger die individuelle Last
-        const loadBalancingFactor = 1 / Math.sqrt(totalDevices)
-        
-        // Realistische Schwankungen pro Gerät
-        const variation = (Math.random() - 0.5) * 15
-        const deviceLoad = (baseCPU * loadBalancingFactor) + variation
-        
-        // Speichere individuellen Wert für dieses Gerät
-        const individualCPU = Math.max(20, Math.min(95, deviceLoad))
-        newIndividualCPU[device.id] = Math.round(individualCPU)
-        
-        totalCPU += deviceLoad
+        // Speichere echten Wert
+        newIndividualCPU[device.id] = Math.round(realCPU)
+        totalCPU += realCPU
       })
       
       // Durchschnittliche CPU-Last aller Geräte
-      const avgCPU = totalCPU / totalDevices
+      const avgCPU = totalDevices > 0 ? totalCPU / totalDevices : 0
       
-      // Begrenze auf 20-90%
-      const clampedCPU = Math.max(20, Math.min(90, avgCPU))
-      
-      setDeviceCpuUsage(Math.round(clampedCPU))
+      setDeviceCpuUsage(Math.round(avgCPU))
       setIndividualDeviceCPU(newIndividualCPU)
     }
 
-    // Initial + alle 2 Sekunden aktualisieren (schneller für Echtzeit-Feeling)
+    // Initial + nur wenn sich Geräte ändern
     updateMultiDeviceCPU()
-    const interval = setInterval(updateMultiDeviceCPU, 2000)
-
-    return () => clearInterval(interval)
   }, [isConnected, connectedDevices])
 
   // Berechne Leistungs-Boost basierend auf verbundenen Geräten
@@ -355,46 +340,6 @@ const Dashboard = () => {
       </div>
 
       <div className="relative z-10">
-        {/* Verbindungstyp-Anzeige oben rechts */}
-        <div className="absolute top-4 right-4 z-20">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2"
-          >
-            <Badge 
-              variant="outline" 
-              className={`
-                text-sm px-3 py-1.5 flex items-center gap-2
-                ${connectionType === 'usb-tethering' ? 'bg-green-500/20 border-green-500 text-green-400' : ''}
-                ${connectionType === 'local-wifi' ? 'bg-blue-500/20 border-blue-500 text-blue-400' : ''}
-                ${connectionType === 'internet' ? 'bg-purple-500/20 border-purple-500 text-purple-400' : ''}
-              `}
-            >
-              {connectionType === 'usb-tethering' && (
-                <>
-                  <Usb className="w-4 h-4" />
-                  USB-Kabel
-                  {localIP && <span className="text-xs opacity-75">({localIP})</span>}
-                </>
-              )}
-              {connectionType === 'local-wifi' && (
-                <>
-                  <Network className="w-4 h-4" />
-                  Lokales WiFi
-                  {localIP && <span className="text-xs opacity-75">({localIP})</span>}
-                </>
-              )}
-              {connectionType === 'internet' && (
-                <>
-                  <Wifi className="w-4 h-4" />
-                  Internet
-                </>
-              )}
-            </Badge>
-          </motion.div>
-        </div>
-
         <motion.div 
           className="min-h-screen flex flex-col items-center justify-center px-4 py-20"
           initial={{ opacity: 0, y: 20 }}
@@ -554,6 +499,23 @@ const Dashboard = () => {
                   Öffne die PowerLink App auf deinem anderen Gerät und scanne diesen Code, 
                   um eine sichere Verbindung herzustellen.
                 </p>
+                
+                {/* Kabel-Verbindung Option */}
+                <div className="mt-6 p-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
+                  <h4 className="text-md font-bold text-gray-800 mb-2 flex items-center gap-2">
+                    <Usb className="w-5 h-5" />
+                    Alternative: Per USB-Kabel verbinden
+                  </h4>
+                  <ol className="text-sm text-gray-700 space-y-2 mb-3">
+                    <li>1️⃣ Verbinde dein Gerät per USB-Kabel</li>
+                    <li>2️⃣ Aktiviere USB-Tethering (iPhone: Persönlicher Hotspot, Android: USB-Tethering)</li>
+                    <li>3️⃣ Öffne den Link oben auf dem anderen Gerät</li>
+                  </ol>
+                  <p className="text-xs text-green-700 font-semibold">
+                    ⚡ Schnellste Verbindung - Funktioniert offline!
+                  </p>
+                </div>
+                
                 <div className="mt-4 p-3 bg-gray-100 rounded text-center">
                   <p className="text-xs text-gray-500 mb-1">Oder verwende diesen Link:</p>
                   <code className="text-xs text-cyan-600 break-all">

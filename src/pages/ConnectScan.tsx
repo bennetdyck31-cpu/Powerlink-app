@@ -17,11 +17,14 @@ const ConnectScan = () => {
   const peerIdFromUrl = searchParams.get('peer')
 
   useEffect(() => {
-    // Automatisch verbinden wenn Peer-ID in URL
+    // Automatisch verbinden wenn Peer-ID in URL und sofort zum Dashboard
     if (peerIdFromUrl && !connecting && !connected) {
+      // Sofort zum Dashboard navigieren (während Verbindung im Hintergrund läuft)
+      navigate('/dashboard', { replace: true })
+      // Verbindung im Hintergrund herstellen
       connectToPeer(peerIdFromUrl)
     }
-  }, [peerIdFromUrl])
+  }, [peerIdFromUrl, connecting, connected, navigate])
 
   const connectToPeer = async (peerId: string) => {
     setConnecting(true)
@@ -33,9 +36,9 @@ const ConnectScan = () => {
       
       console.log('✅ WebRTC Manager verbunden')
       
-      // Warte auf tatsächliche Peer-Verbindung (nicht nur Peer-Initialisierung)
+      // Warte auf tatsächliche Peer-Verbindung
       let attempts = 0
-      const maxAttempts = 20 // 10 Sekunden max
+      const maxAttempts = 20
       
       const checkConnection = () => {
         attempts++
@@ -46,11 +49,7 @@ const ConnectScan = () => {
           console.log('✅ Verbindung bestätigt:', devices)
           setConnecting(false)
           setConnected(true)
-          
-          // Nach 1.5 Sekunden zum Dashboard
-          setTimeout(() => {
-            navigate('/dashboard')
-          }, 1500)
+          // Kein Redirect mehr - Dashboard ist bereits aktiv
         } else if (attempts < maxAttempts) {
           setTimeout(checkConnection, 500)
         } else {
@@ -60,7 +59,6 @@ const ConnectScan = () => {
         }
       }
       
-      // Starte Connection-Check nach 1 Sekunde
       setTimeout(checkConnection, 1000)
       
     } catch (err: any) {

@@ -43,8 +43,16 @@ class WebRTCManager {
       if (document.hidden) {
         console.log('📱 App in Hintergrund - Verbindung bleibt aktiv')
         // NICHT trennen! Nur loggen
+        // Keep-Alive Ping senden, um Verbindung aufrecht zu erhalten
+        this.connections.forEach((conn) => {
+          if (conn.open) {
+            this.sendMessage(conn, { type: 'ping', data: {}, timestamp: Date.now() })
+          }
+        })
       } else {
         console.log('📱 App wieder im Vordergrund')
+        // Prüfe alle Verbindungen und stelle sie wieder her wenn nötig
+        this.reconnectIfNeeded()
       }
     }
     document.addEventListener('visibilitychange', this.visibilityChangeHandler)
@@ -65,6 +73,26 @@ class WebRTCManager {
       // Wake Lock API für moderne Browser
       console.log('✅ Wake Lock API verfügbar')
     }
+  }
+
+  private reconnectIfNeeded() {
+    // Prüfe ob PeerJS Server-Verbindung noch aktiv ist
+    if (this.peer && this.peer.disconnected) {
+      console.log('🔄 PeerJS Server getrennt - versuche Wiederverbindung')
+      this.peer.reconnect()
+    }
+
+    // Prüfe alle Peer-zu-Peer Verbindungen
+    this.connections.forEach((conn, peerId) => {
+      if (!conn.open) {
+        console.log(`🔄 Verbindung zu ${peerId} getrennt - versuche Wiederverbindung`)
+        // Entferne tote Verbindung
+        this.connections.delete(peerId)
+        if (this.onDeviceDisconnected) {
+          this.onDeviceDisconnected(peerId)
+        }
+      }
+    })
   }
 
   private initializeLocalDeviceInfo() {
