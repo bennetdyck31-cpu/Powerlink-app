@@ -391,8 +391,8 @@ const Dashboard = () => {
                   <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.bgGradient} flex items-center justify-center mb-4`}>
                     <stat.icon className={`w-6 h-6 ${stat.color}`} />
                   </div>
-                  <div className="text-2xl font-bold mb-1">{stat.value}</div>
-                  <div className="text-xs text-gray-400">{stat.label}</div>
+                  <div className="text-2xl font-bold mb-1 text-amber-50">{stat.value}</div>
+                  <div className="text-xs text-amber-100/70">{stat.label}</div>
                   {stat.progress !== undefined && (
                     <Progress value={stat.progress} className="h-3 mt-3" />
                   )}
@@ -444,7 +444,7 @@ const Dashboard = () => {
 
           <Card className="w-full max-w-4xl p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold flex items-center">
+              <h2 className="text-2xl font-bold text-amber-50 flex items-center">
                 <Smartphone className="mr-3 h-6 w-6 text-blue-400" />
                 Connected Devices ({connectedDevices.length}/{MAX_DEVICES})
               </h2>
@@ -509,7 +509,7 @@ const Dashboard = () => {
                   animate={{ opacity: 1, x: 0 }}
                   className="bg-gray-800 border border-gray-700 p-6 rounded-lg flex flex-col items-center"
                 >
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <h3 className="text-xl font-bold text-amber-50 mb-4 flex items-center gap-2">
                     <QrCode className="w-6 h-6" />
                     QR-Code scannen
                   </h3>
@@ -523,12 +523,12 @@ const Dashboard = () => {
                     />
                   </div>
                   
-                  <p className="text-gray-400 mt-4 text-center text-sm">
+                  <p className="text-amber-100/60 mt-4 text-center text-sm">
                     Scanne mit deinem anderen Gerät
                   </p>
                   
                   <div className="mt-4 p-3 bg-gray-900/50 rounded text-center w-full">
-                    <p className="text-xs text-gray-500 mb-1">Oder verwende diesen Link:</p>
+                    <p className="text-xs text-amber-100/50 mb-1">Oder verwende diesen Link:</p>
                     <code className="text-xs text-blue-400 break-all">
                       https://supafer.netlify.app/connect?peer={myPeerId}
                     </code>
@@ -542,7 +542,7 @@ const Dashboard = () => {
                   transition={{ delay: 0.1 }}
                   className="bg-gradient-to-br from-emerald-900/30 to-teal-900/30 border-2 border-emerald-500/50 p-6 rounded-lg"
                 >
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <h3 className="text-xl font-bold text-amber-50 mb-4 flex items-center gap-2">
                     <Usb className="w-6 h-6 text-green-400" />
                     Per USB-Kabel verbinden
                   </h3>
@@ -552,8 +552,8 @@ const Dashboard = () => {
                       <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
                         <span className="text-green-400 font-bold">1</span>
                       </div>
-                      <p className="text-gray-300 text-sm pt-1">
-                        Verbinde dein Gerät per <strong>USB-Kabel</strong> mit dem Computer
+                      <p className="text-amber-100/80 text-sm pt-1">
+                        Verbinde dein Gerät per <strong className="text-amber-50">USB-Kabel</strong> mit dem Computer
                       </p>
                     </div>
                     
@@ -561,11 +561,11 @@ const Dashboard = () => {
                       <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
                         <span className="text-green-400 font-bold">2</span>
                       </div>
-                      <div className="text-gray-300 text-sm pt-1">
-                        <p className="mb-1">Aktiviere <strong>USB-Tethering:</strong></p>
-                        <ul className="text-xs text-gray-400 space-y-1 ml-4">
-                          <li>• <strong>iPhone:</strong> Einstellungen → Persönlicher Hotspot</li>
-                          <li>• <strong>Android:</strong> Einstellungen → Netzwerk → USB-Tethering</li>
+                      <div className="text-amber-100/80 text-sm pt-1">
+                        <p className="mb-1">Aktiviere <strong className="text-amber-50">USB-Tethering:</strong></p>
+                        <ul className="text-xs text-amber-100/60 space-y-1 ml-4">
+                          <li>• <strong className="text-amber-50">iPhone:</strong> Einstellungen → Persönlicher Hotspot</li>
+                          <li>• <strong className="text-amber-50">Android:</strong> Einstellungen → Netzwerk → USB-Tethering</li>
                         </ul>
                       </div>
                     </div>
@@ -574,8 +574,8 @@ const Dashboard = () => {
                       <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
                         <span className="text-green-400 font-bold">3</span>
                       </div>
-                      <p className="text-gray-300 text-sm pt-1">
-                        Öffne den Link oben auf dem <strong>anderen Gerät</strong>
+                      <p className="text-amber-100/80 text-sm pt-1">
+                        Öffne den Link oben auf dem <strong className="text-amber-50">anderen Gerät</strong>
                       </p>
                     </div>
                   </div>
@@ -585,7 +585,7 @@ const Dashboard = () => {
                       <Zap className="w-4 h-4" />
                       Schnellste Verbindung - Funktioniert offline!
                     </p>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-amber-100/60 mt-1">
                       Bis zu 480 Mbps Übertragungsrate
                     </p>
                   </div>
@@ -601,7 +601,7 @@ const Dashboard = () => {
                   className="w-16 h-16 mx-auto mb-4 border-4 border-blue-500 border-t-transparent rounded-full"
                 />
                 <p className="text-blue-400 text-lg mb-2">Verbindung wird vorbereitet...</p>
-                <p className="text-gray-500 text-sm">
+                <p className="text-amber-100/60 text-sm">
                   WebRTC-Verbindung wird initialisiert
                 </p>
               </div>
@@ -612,8 +612,8 @@ const Dashboard = () => {
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-700/50 flex items-center justify-center">
                   <Wifi className="w-10 h-10 text-gray-500" />
                 </div>
-                <p className="text-gray-400 text-lg mb-2">Keine Geräte verbunden</p>
-                <p className="text-gray-500 text-sm mb-4">
+                <p className="text-amber-100/80 text-lg mb-2">Keine Geräte verbunden</p>
+                <p className="text-amber-100/60 text-sm mb-4">
                   Klicke auf "QR-Code anzeigen" und scanne ihn mit deinem anderen Gerät
                 </p>
               </div>
@@ -649,13 +649,13 @@ const Dashboard = () => {
                               )}
                             </motion.div>
                             <div>
-                              <div className="font-semibold text-white flex items-center gap-2">
+                              <div className="font-semibold text-amber-50 flex items-center gap-2">
                                 {device.name}
                                 <Badge variant="outline" className="text-xs">
                                   {device.os}
                                 </Badge>
                               </div>
-                              <div className="text-sm text-gray-400">
+                              <div className="text-sm text-amber-100/60">
                                 {device.model} • {device.type}
                               </div>
                             </div>
@@ -674,7 +674,7 @@ const Dashboard = () => {
                         <div className="space-y-3">
                           <div>
                             <div className="flex justify-between text-sm mb-1">
-                              <span className="text-gray-400">CPU Echtzeit</span>
+                              <span className="text-amber-100/70">CPU Echtzeit</span>
                               <motion.span 
                                 className={`font-bold ${
                                   currentCPU > 80 ? 'text-red-400' : 
@@ -699,7 +699,7 @@ const Dashboard = () => {
                           </div>
                           <div>
                             <div className="flex justify-between text-sm mb-1">
-                              <span className="text-gray-400">GPU</span>
+                              <span className="text-amber-100/70">GPU</span>
                               <span className="text-indigo-400">{device.gpu}%</span>
                             </div>
                             <Progress value={device.gpu} className="h-1.5" indicatorClassName="bg-indigo-400" />
