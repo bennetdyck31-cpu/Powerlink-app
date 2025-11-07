@@ -1,5 +1,6 @@
 import Peer, { DataConnection } from 'peerjs'
 import { connectionManager, ConnectionType } from './connection-manager'
+import { autoDiscovery } from './auto-discovery'
 
 export interface DeviceInfo {
   id: string
@@ -241,6 +242,11 @@ class WebRTCManager {
         this.peer.on('open', (id) => {
           console.log('✅ Host Peer ID erstellt:', id)
           this.setupHostListeners()
+          
+          // Broadcaste Host-Verfügbarkeit für Auto-Discovery
+          const deviceName = this.localDeviceInfo?.name || 'Unknown Device'
+          autoDiscovery.announceAsHost(id, deviceName, networkInfo.type)
+          
           resolve(id)
         })
 
@@ -427,6 +433,9 @@ class WebRTCManager {
     this.connections.clear()
 
     if (this.peer) {
+      // Stoppe Host-Announcement
+      autoDiscovery.stopHostAnnouncement()
+      
       this.peer.destroy()
       this.peer = null
     }

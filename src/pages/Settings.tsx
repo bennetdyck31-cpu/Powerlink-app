@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Settings as SettingsIcon, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
@@ -8,12 +9,28 @@ import { Label } from '@/components/ui/label'
 
 const Settings = () => {
   const [autoConnect, setAutoConnect] = useState(true)
+  const [autoStartHost, setAutoStartHost] = useState(false)
   const [aes256, setAes256] = useState(true)
   const [pushNotifications, setPushNotifications] = useState(false)
 
   const clearCache = () => {
     alert('Cache geleert! (Demo)')
   }
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('autoStartHost')
+      setAutoStartHost(v === 'true')
+    } catch (e) {
+      // ignore (private mode)
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('autoStartHost', autoStartHost ? 'true' : 'false')
+    } catch (e) {}
+  }, [autoStartHost])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-indigo-900 p-6">
@@ -35,7 +52,16 @@ const Settings = () => {
                   <Label htmlFor="auto-connect" className="text-base font-semibold">Auto-Connect</Label>
                   <p className="text-sm text-gray-400">Automatisch mit verfügbaren Geräten verbinden</p>
                 </div>
-                <Switch id="auto-connect" checked={autoConnect} onCheckedChange={setAutoConnect} />
+                <div className="flex items-center gap-4">
+                  <Switch id="auto-connect" checked={autoConnect} onCheckedChange={setAutoConnect} />
+                  <div className="flex items-center">
+                    <div className="mr-3 text-sm">
+                      <Label htmlFor="auto-start-host" className="text-sm font-medium">Auto-Start Host (USB)</Label>
+                      <div className="text-xs text-gray-400">Starte Host automatisch bei USB-Tethering</div>
+                    </div>
+                    <Switch id="auto-start-host" checked={autoStartHost} onCheckedChange={setAutoStartHost} />
+                  </div>
+                </div>
               </div>
             </Card>
 

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { TrendingUp, Zap, Cpu, HardDrive, Laptop, Smartphone, Tablet, WifiOff } from 'lucide-react'
+import { TrendingUp, Zap, Laptop, Smartphone, Tablet, WifiOff } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { useDevices } from '@/context/DeviceContext'

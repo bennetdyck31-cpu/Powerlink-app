@@ -11,26 +11,21 @@ import {
   AlertTriangle,
   Wifi,
   WifiOff,
-  Usb,
-  Network
+  Usb
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { webrtcManager, DeviceInfo } from '@/lib/webrtc'
+import { webrtcManager } from '@/lib/webrtc'
 import { QRCodeSVG } from 'qrcode.react'
-import { connectionManager, ConnectionType } from '@/lib/connection-manager'
+import { connectionManager } from '@/lib/connection-manager'
 import { useDevices } from '@/context/DeviceContext'
+import { autoDiscovery } from '@/lib/auto-discovery'
 
 // Technisch optimales Maximum: 4 Geräte
 // Begründung: WebRTC-Bandbreite, CPU-Overhead (~20%), P2P-Sync-Komplexität
 const MAX_DEVICES = 4
-
-interface ConnectedDevice extends DeviceInfo {
-  connectedAt: number
-  lastUpdate: number
-}
 
 const Dashboard = () => {
   const { connectedDevices, setConnectedDevices } = useDevices()
@@ -40,22 +35,84 @@ const Dashboard = () => {
   const [cpuUsage, setCpuUsage] = useState(0)
   const [deviceCpuUsage, setDeviceCpuUsage] = useState(0)
   const [individualDeviceCPU, setIndividualDeviceCPU] = useState<Record<string, number>>({})
-  const [connectionType, setConnectionType] = useState<ConnectionType>('internet')
-  const [localIP, setLocalIP] = useState<string | null>(null)
 
   // Berechne Verbindungsstatus basierend auf tatsächlich verbundenen Geräten
   const isConnected = connectedDevices.length > 0
 
-  // Erkenne Verbindungstyp beim Start
+  // Auto-Discovery: Suche nach Hosts und verbinde automatisch
+  useEffect(() => {
+    const autoConnect = localStorage.getItem('autoConnect') === 'true'
+    if (!autoConnect || isConnected || connecting || myPeerId) return
+
+    let scanning = false
+
+    const scanAndConnect = async () => {
+      if (scanning) return
+      scanning = true
+
+      try {
+        const bestHost = await autoDiscovery.getBestHost()
+        
+        if (bestHost && !isConnected && !myPeerId) {
+          console.log('🤖 Auto-Connect: Host gefunden:', bestHost.peerId)
+          setConnecting(true)
+          await webrtcManager.connectToHost(bestHost.peerId)
+          console.log('✅ Automatisch verbunden mit:', bestHost.deviceName)
+        }
+      } catch (error) {
+        console.log('⚠️ Auto-Connect fehlgeschlagen:', error)
+      } finally {
+        scanning = false
+        setConnecting(false)
+      }
+    }
+
+    // Initial scan
+    scanAndConnect()
+
+    // Scanne alle 3 Sekunden
+    const scanInterval = setInterval(scanAndConnect, 3000)
+
+    // Event Listener für neue Hosts
+    autoDiscovery.onDiscoverHost(async (host) => {
+      if (!isConnected && !connecting && !myPeerId && autoConnect) {
+        console.log('🤖 Auto-Connect: Neuer Host entdeckt:', host.peerId)
+        try {
+          setConnecting(true)
+          await webrtcManager.connectToHost(host.peerId)
+          console.log('✅ Automatisch verbunden mit:', host.deviceName)
+        } catch (error) {
+          console.log('⚠️ Auto-Connect fehlgeschlagen:', error)
+        } finally {
+          setConnecting(false)
+        }
+      }
+    })
+
+    return () => {
+      clearInterval(scanInterval)
+    }
+  }, [isConnected, connecting, myPeerId])
+
+  // Erkenne Verbindungstyp beim Start und starte optional Auto-Host
   useEffect(() => {
     const detectConnection = async () => {
       const networkInfo = await connectionManager.getNetworkInfo()
-      setConnectionType(networkInfo.type)
-      setLocalIP(networkInfo.localIP || null)
       
       console.log('📡 Dashboard Verbindungstyp:', networkInfo.type)
       if (networkInfo.localIP) {
         console.log('🌐 Lokale IP:', networkInfo.localIP)
+      }
+
+      // Auto-Start Host bei USB-Tethering
+      try {
+        const autoStartHost = localStorage.getItem('autoStartHost') === 'true'
+        if (autoStartHost && networkInfo.type === 'usb-tethering' && !myPeerId && !isConnected) {
+          console.log('⚙️ Auto-Start Host-Modus (USB-Tethering erkannt)')
+          startHostMode()
+        }
+      } catch (e) {
+        // ignore
       }
     }
     
@@ -63,8 +120,17 @@ const Dashboard = () => {
     
     // Aktualisiere alle 5 Sekunden
     const interval = setInterval(detectConnection, 5000)
-    return () => clearInterval(interval)
-  }, [])
+    
+    // Reagiere auf online/offline Events
+    window.addEventListener('online', detectConnection)
+    window.addEventListener('offline', detectConnection)
+    
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('online', detectConnection)
+      window.removeEventListener('offline', detectConnection)
+    }
+  }, [myPeerId, isConnected])
 
   // ECHTE CPU-Messung durch intensive Berechnungen
   useEffect(() => {
