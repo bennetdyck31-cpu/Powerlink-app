@@ -8,6 +8,8 @@ const Performance = () => {
   const { connectedDevices } = useDevices()
   const hasDevices = connectedDevices.length > 0
 
+  console.log('📊 Performance Page - Connected Devices:', connectedDevices.length, connectedDevices)
+
   // Stats nur anzeigen wenn Geräte verbunden sind
   const stats = hasDevices ? [
     { label: 'Speedup', value: `${connectedDevices.length}x`, icon: TrendingUp, color: 'text-indigo-400', bgGradient: 'from-indigo-500/20 to-violet-500/20' },

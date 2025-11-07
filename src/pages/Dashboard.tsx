@@ -42,54 +42,65 @@ const Dashboard = () => {
   // Auto-Discovery: Suche nach Hosts und verbinde automatisch
   useEffect(() => {
     const autoConnect = localStorage.getItem('autoConnect') === 'true'
-    if (!autoConnect || isConnected || connecting || myPeerId) return
+    if (!autoConnect) return
+    
+    // Verhindere Auto-Connect wenn bereits verbunden oder selbst Host
+    if (isConnected || connecting || myPeerId) return
 
     let scanning = false
+    let mounted = true
 
     const scanAndConnect = async () => {
-      if (scanning) return
+      if (scanning || !mounted) return
       scanning = true
 
       try {
         const bestHost = await autoDiscovery.getBestHost()
         
-        if (bestHost && !isConnected && !myPeerId) {
-          console.log('🤖 Auto-Connect: Host gefunden:', bestHost.peerId)
+        if (bestHost && !isConnected && !myPeerId && mounted) {
+          console.log('🤖 Auto-Connect: Host gefunden:', bestHost.peerId, bestHost.deviceName)
           setConnecting(true)
-          await webrtcManager.connectToHost(bestHost.peerId)
-          console.log('✅ Automatisch verbunden mit:', bestHost.deviceName)
+          try {
+            await webrtcManager.connectToHost(bestHost.peerId)
+            console.log('✅ Automatisch verbunden mit:', bestHost.deviceName)
+          } catch (error) {
+            console.log('⚠️ Auto-Connect fehlgeschlagen:', error)
+            setConnecting(false)
+          }
         }
       } catch (error) {
-        console.log('⚠️ Auto-Connect fehlgeschlagen:', error)
+        console.log('⚠️ Scan fehlgeschlagen:', error)
       } finally {
         scanning = false
-        setConnecting(false)
       }
     }
 
-    // Initial scan
-    scanAndConnect()
+    // Initial scan nach 1 Sekunde (nach Component Mount)
+    const initialTimeout = setTimeout(scanAndConnect, 1000)
 
-    // Scanne alle 3 Sekunden
-    const scanInterval = setInterval(scanAndConnect, 3000)
+    // Scanne alle 5 Sekunden (nicht zu aggressiv)
+    const scanInterval = setInterval(scanAndConnect, 5000)
 
     // Event Listener für neue Hosts
-    autoDiscovery.onDiscoverHost(async (host) => {
-      if (!isConnected && !connecting && !myPeerId && autoConnect) {
-        console.log('🤖 Auto-Connect: Neuer Host entdeckt:', host.peerId)
+    const handleHostDiscovery = async (host: any) => {
+      if (!isConnected && !connecting && !myPeerId && autoConnect && mounted) {
+        console.log('🤖 Auto-Connect: Neuer Host entdeckt:', host.peerId, host.deviceName)
+        setConnecting(true)
         try {
-          setConnecting(true)
           await webrtcManager.connectToHost(host.peerId)
           console.log('✅ Automatisch verbunden mit:', host.deviceName)
         } catch (error) {
           console.log('⚠️ Auto-Connect fehlgeschlagen:', error)
-        } finally {
           setConnecting(false)
         }
       }
-    })
+    }
+
+    autoDiscovery.onDiscoverHost(handleHostDiscovery)
 
     return () => {
+      mounted = false
+      clearTimeout(initialTimeout)
       clearInterval(scanInterval)
     }
   }, [isConnected, connecting, myPeerId])
@@ -297,7 +308,21 @@ const Dashboard = () => {
     if (!isConnected) return
 
     const interval = setInterval(() => {
-      webrtcManager.sendPerformanceUpdate(cpuUsage, 0, 0)
+      // Simuliere GPU (basierend auf CPU + etwas Variation)
+      const gpuUsage = Math.max(10, Math.min(100, cpuUsage * 0.8 + Math.random() * 20))
+      
+      // Simuliere RAM (4-8GB basierend auf Browser Memory Info)
+      const memoryInfo = (performance as any).memory
+      const ramUsage = memoryInfo 
+        ? Math.min(16, (memoryInfo.usedJSHeapSize / (1024 * 1024 * 1024)) * 2) // GB
+        : 4 + Math.random() * 2
+      
+      console.log('📤 Sende Performance:', { cpu: cpuUsage, gpu: Math.round(gpuUsage), ram: ramUsage.toFixed(1) })
+      webrtcManager.sendPerformanceUpdate(
+        cpuUsage, 
+        Math.round(gpuUsage), 
+        parseFloat(ramUsage.toFixed(1))
+      )
     }, 3000)
 
     return () => clearInterval(interval)
