@@ -50,6 +50,14 @@ class ConnectionManager {
           return true
         }
 
+        // USB-Ethernet (Link-Local) ohne Tethering: 169.254.x.x
+        // macOS ↔ iPad/iPhone direkte USB-Verbindung
+        if (localIP.startsWith('169.254.')) {
+          console.log('✅ USB-Ethernet (Link-Local) erkannt! IP:', localIP)
+          this.currentType = 'usb-tethering'
+          return true
+        }
+
         // Lokales WiFi: 192.168.x.x, 10.x.x.x
         if (
           localIP.startsWith('192.168.') ||
@@ -128,13 +136,14 @@ class ConnectionManager {
     const localIP = await this.getLocalIP()
     if (!localIP) return false
 
-    // Private IP-Bereiche
+    // Private IP-Bereiche + Link-Local
     return (
       localIP.startsWith('192.168.') ||
       localIP.startsWith('10.') ||
       localIP.startsWith('172.16.') ||
       localIP.startsWith('172.20.') ||
-      localIP.startsWith('172.30.')
+      localIP.startsWith('172.30.') ||
+      localIP.startsWith('169.254.')  // Link-Local (USB-Ethernet)
     )
   }
 
@@ -202,9 +211,10 @@ class ConnectionManager {
     if (!localIP) return false
 
     return (
-      localIP.startsWith('172.20.10.') ||  // iPhone
-      localIP.startsWith('192.168.42.') ||  // Android
-      localIP.startsWith('192.168.43.')     // Android
+      localIP.startsWith('172.20.10.') ||  // iPhone Tethering
+      localIP.startsWith('192.168.42.') ||  // Android Tethering
+      localIP.startsWith('192.168.43.') ||  // Android Tethering alt
+      localIP.startsWith('169.254.')        // USB-Ethernet (Link-Local)
     )
   }
 }

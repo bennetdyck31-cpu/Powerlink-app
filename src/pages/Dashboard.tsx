@@ -653,7 +653,12 @@ const Dashboard = () => {
                         <span className="text-green-400 font-bold">2</span>
                       </div>
                       <div className="text-amber-100/80 text-sm pt-1">
-                        <p className="mb-1">Aktiviere <strong className="text-amber-50">USB-Tethering:</strong></p>
+                        <p className="mb-2"><strong className="text-amber-50">Option A:</strong> Direkte USB-Verbindung (macOS/iOS)</p>
+                        <p className="text-xs text-green-400/80 mb-2 ml-4">
+                          ✨ Funktioniert automatisch! Kein Tethering nötig.
+                        </p>
+                        
+                        <p className="mb-1 mt-3"><strong className="text-amber-50">Option B:</strong> USB-Tethering aktivieren:</p>
                         <ul className="text-xs text-amber-100/60 space-y-1 ml-4">
                           <li>• <strong className="text-amber-50">iPhone:</strong> Einstellungen → Persönlicher Hotspot</li>
                           <li>• <strong className="text-amber-50">Android:</strong> Einstellungen → Netzwerk → USB-Tethering</li>
@@ -674,10 +679,11 @@ const Dashboard = () => {
                   <div className="bg-green-500/10 border border-emerald-500/30 rounded-lg p-3">
                     <p className="text-green-400 font-semibold text-sm flex items-center gap-2">
                       <Zap className="w-4 h-4" />
-                      Schnellste Verbindung - Funktioniert offline!
+                      Schnellste Verbindung - Kein Internet nötig!
                     </p>
                     <p className="text-xs text-amber-100/60 mt-1">
-                      Bis zu 480 Mbps Übertragungsrate
+                      • macOS/iOS: Automatisch ohne Tethering (169.254.x.x)<br/>
+                      • Android: Mit USB-Tethering (bis zu 480 Mbps)
                     </p>
                   </div>
                 </motion.div>
